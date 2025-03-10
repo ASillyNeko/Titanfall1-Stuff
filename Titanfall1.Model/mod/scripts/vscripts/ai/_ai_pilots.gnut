@@ -357,7 +357,6 @@ entity function NpcPilotCallsInTitan( entity pilot, vector origin, vector angles
 	NPCFollowsNPC( titan, pilot )
 	PilotNotInTitanSet( titan )
 	thread AntiEliteTitanExecution( titan )
-	thread RandomTitanfall1( titan )
 	thread EjectWhenDoomed( titan )
 	//thread __TitanKneelOrStandAfterDropin( titan, pilot )
 
@@ -532,49 +531,6 @@ void function PilotNotInTitanSet( entity titan )
 			            break;
 		}
 	}
-}
-
-void function RandomTitanfall1( entity titan )
-{
-TakeWeaponsForArray( titan, titan.GetMainWeapons() )
-
-// No Triple Threat Because It Does 0 Damage
-
-int RandomWeapon = RandomIntRange( 0, 5 )
-
-if( RandomWeapon == 0 )
-titan.GiveWeapon("mp_titanweapon_rocketeer_rocketstream")
-if( RandomWeapon == 1 )
-titan.GiveWeapon("mp_titanweapon_sticky_40mm")
-if( RandomWeapon == 2 )
-titan.GiveWeapon("mp_titanweapon_xo16_vanguard")
-if( RandomWeapon == 3 )
-titan.GiveWeapon("mp_titanweapon_sniper")
-if( RandomWeapon == 4 )
-titan.GiveWeapon("mp_titanweapon_arc_cannon")
-
-int RandomTac = RandomIntRange( 0, 3 )
-
-if( RandomTac == 0 )
-titan.GiveOffhandWeapon( "mp_titanweapon_vortex_shield", OFFHAND_SPECIAL )
-if( RandomTac == 1 )
-titan.GiveOffhandWeapon( "mp_titanability_particle_wall", OFFHAND_SPECIAL )
-if( RandomTac == 2 )
-{
-titan.GiveOffhandWeapon( "mp_titanability_smoke", OFFHAND_SPECIAL )
-titan.GetOffhandWeapon(OFFHAND_SPECIAL).AddMod("pas_defensive_core")
-}
-
-// No Slaved Warheads Because Its Not In Titanfall 2/Tone's Rockets Won't Work
-
-int RandomOff = RandomIntRange( 0, 3 )
-
-if( RandomOff == 0 )
-titan.GiveOffhandWeapon( "mp_titanweapon_salvo_rockets", OFFHAND_ORDNANCE )
-if( RandomOff == 1 )
-titan.GiveOffhandWeapon( "mp_titanweapon_dumbfire_rockets", OFFHAND_ORDNANCE )
-if( RandomOff == 2 )
-titan.GiveOffhandWeapon( "mp_titanweapon_shoulder_rockets", OFFHAND_ORDNANCE )
 }
 
 void function TitanStandAfterDropIn( entity titan, entity pilot )

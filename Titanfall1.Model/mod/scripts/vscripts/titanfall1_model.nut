@@ -78,9 +78,6 @@ WaitFrame()
 
 void function RandomTitanfall1( entity titan )
 {
-if( !IsValid( GetPetTitanOwner( titan ) ) )
-return
-
 TakeWeaponsForArray( titan, titan.GetMainWeapons() )
 
 // No Triple Threat Because It Does 0 Damage
@@ -122,8 +119,47 @@ if( RandomOff == 2 )
 titan.GiveOffhandWeapon( "mp_titanweapon_shoulder_rockets", OFFHAND_ORDNANCE )
 }
 
+void function NoPlayerTitanfall1Model( entity titan )
+{
+    titan.WaitSignal( "TitanHotDropComplete" )
+	if( !IsValid( titan ) )
+	return
+
+    titan.TakeOffhandWeapon(OFFHAND_EQUIPMENT)
+    titan.GiveOffhandWeapon( "mp_titancore_amp_core", OFFHAND_EQUIPMENT )
+	titan.TakeOffhandWeapon(OFFHAND_ANTIRODEO)
+	titan.TakeOffhandWeapon(OFFHAND_SPECIAL)
+	titan.TakeOffhandWeapon(OFFHAND_ORDNANCE)
+	thread LoopTakeInventorySmoke( titan )
+	thread RandomTitanfall1( titan )
+
+	string attackerType = GetTitanCharacterName( titan )
+	switch ( attackerType )
+	    {
+		case "ronin": titan.SetModel($"models/titans/stryder/stryder_titan.mdl")
+                        break;
+		case "scorch": titan.SetModel($"models/titans/ogre/ogre_titan.mdl")
+                        break;
+		case "legion": titan.SetModel($"models/titans/ogre/ogre_titan.mdl")
+			            break;
+		case "ion": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+                        break;
+		case "tone": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+                        break;
+		case "vanguard": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+                        break;
+        case "northstar": titan.SetModel($"models/titans/stryder/stryder_titan.mdl")
+			            break;
+	    }
+}
+
 void function Titanfall1Model( entity titan )
 {
+if( !IsValid( GetPetTitanOwner( titan ) ) )
+{
+thread NoPlayerTitanfall1Model( titan )
+return
+}
     titan.TakeOffhandWeapon(OFFHAND_EQUIPMENT)
     titan.GiveOffhandWeapon( "mp_titancore_amp_core", OFFHAND_EQUIPMENT )
 	titan.TakeOffhandWeapon(OFFHAND_ANTIRODEO)
