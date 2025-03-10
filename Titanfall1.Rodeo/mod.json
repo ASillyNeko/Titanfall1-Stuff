@@ -1,0 +1,17 @@
+{
+	"Name" : "TF1 Rodeo",
+	"Description" : "",
+	"Version": "1.0.0",
+	"LoadPriority": 21,
+	"RequiredOnClient": false,
+
+	"Scripts": [
+		{
+			"Path": "titanfall1_rodeo.nut",
+			"RunOn": "SERVER",
+			"ServerCallback": {
+				"After": "titanfall1_rodeo_init"
+			}
+		}
+	]
+}

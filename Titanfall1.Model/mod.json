@@ -1,0 +1,20 @@
+{
+	"Name" : "TF1 Model",
+	"Description" : "",
+	"Version": "1.0.0",
+	"LoadPriority": 21,
+	"RequiredOnClient": true,
+
+	"Scripts": [
+		{
+			"Path": "titanfall1_model.nut",
+			"RunOn": "MP",
+			"ClientCallback": {
+				"After": "titanfall1_model_init"
+			},
+			"ServerCallback": {
+				"After": "titanfall1_model_init"
+			}
+		}
+	]
+}
