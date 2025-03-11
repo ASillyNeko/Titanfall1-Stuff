@@ -33,16 +33,15 @@ thread PilotStartRodeoOnTitan( player, titan )
 
 void function TitanStandUpModded( entity titan )
 {
-	entity soul = titan.GetTitanSoul()
+if ( titan.GetTitanSoul().GetStance() == STANCE_KNEEL )
+return
+	//entity soul = titan.GetTitanSoul()
 	// stand up
 	ShowMainTitanWeapons( titan )
 	titan.Anim_Stop()
-	WaitFrame()
-	if ( IsValid( titan ) )
-	titan.Anim_Stop()
 	thread PlayAnimGravity( titan, "at_hotdrop_quickstand" )
 	//Assert( soul == titan.GetTitanSoul() )
-	//SetStanceStand( soul )
+	SetStanceStand( titan.GetTitanSoul() )
 }
 
 
@@ -51,14 +50,15 @@ void function TitanKneelModded( entity titan )
 	titan.EndSignal( "TitanStopsThinking" )
 	titan.EndSignal( "OnDeath" )
 	Assert( IsAlive( titan ) )
-	entity soul = titan.GetTitanSoul()
+	//entity soul = titan.GetTitanSoul()
 
+	if ( titan.GetTitanSoul().GetStance() == STANCE_STAND )
 	waitthread KneelToShowRiderModded( titan )
 	if ( !IsValid( titan ) )
 	return 
 
-	//SetStanceKneeling( soul )
-	thread PlayAnim( titan, "at_MP_embark_idle_blended" )
+	thread PlayAnimGravity( titan, "at_MP_embark_idle_blended" )
+	SetStanceKneel( titan.GetTitanSoul() )
 }
 
 void function KneelToShowRiderModded( entity titan )
@@ -88,9 +88,12 @@ void function KneelToShowRiderModded( entity titan )
 	//thread HideOgreMainWeaponFromEnemies( titan )
 		// try to fix titan getting stuck
 		//waitthread PlayAnimGravity( titan, animation )
-		thread PlayAnim( titan, "at_MP_stand2knee_straight" )
+		thread PlayAnimGravity( titan, "at_MP_stand2knee_straight" )
 		titan.Anim_DisableUpdatePosition()
 		WaittillAnimDone( titan )
+		if( !IsValid( titan ) )
+		return
+
 	if ( !TitanCanStand( titan ) )// sets the var
 	{
 		// try to put the titan on the navmesh
@@ -122,7 +125,7 @@ void function RodeoKneel( entity titan )
 {
 if ( IsValid( GetEnemyRodeoPilot( titan ) ) )
 {
-thread TitanKneelModded( titan )
+waitthread TitanKneelModded( titan )
 thread StopRodeoKneel( titan )
 }
 }
@@ -188,17 +191,18 @@ while ( true )
 		}
 		if ( smokeinventory != null )
 		{
-		if ( smokeinventory.GetWeaponPrimaryAmmoCount() == 0 )
-		{
-		titan.TakeOffhandWeapon( OFFHAND_INVENTORY )
-		WaitForever()
-		}
-		}
-		if ( smokeinventory != null )
-		{
+		    if ( smokeinventory.GetWeaponPrimaryAmmoCount() != 0 )
+			{
 		    smokeinventory.SetWeaponPrimaryAmmoCount( smokeinventory.GetWeaponPrimaryAmmoCount() - 1 )
 			TitanSmokescreen( titan, smokeinventory )
 			WaitForever()
+			}
+			if ( smokeinventory.GetWeaponPrimaryAmmoCount() == 0 )
+			{
+			titan.TakeOffhandWeapon( OFFHAND_INVENTORY )
+			TitanSmokescreen( titan, smokeinventory )
+			WaitForever()
+			}
 		}
 	}
 WaitFrame()
