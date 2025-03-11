@@ -2,7 +2,7 @@
 
 [Discord Server](https://discord.gg/9wcEdgRyrs)
 
-If Using Attrition Extended Use `classic_execution 1` And Don't Add Titanfall1.Execution
+If You Are Using Attrition Extended Use `classic_execution 1` And Don't Add Titanfall1.Execution
 
 I Don't Recommend Using `classic_rodeo 1`
 
