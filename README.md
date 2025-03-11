@@ -12,4 +12,4 @@ Titanfall1.Model | Changes Titan Model To The One From Titanfall 1 Also Use Tita
 
 Titanfall1.Execution | Uses Titanfall 1 Titan Execution
 
-Titanfall1.Rodeo | Makes Rodeoing Titans About The Same As Titanfall 1
+Titanfall1.Rodeo | Makes Rodeoing Titans Almost The Same As Titanfall 1
