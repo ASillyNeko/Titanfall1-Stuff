@@ -179,6 +179,10 @@ smoketac.SetWeaponPrimaryAmmoCount( smoketac.GetWeaponPrimaryAmmoCount() - 1 )
 if ( smoketac.GetWeaponPrimaryAmmoCount() == 0 )
 return
 wait 1
+if( !IsValid( smoketac ) )
+return
+if( !IsValid( titan ) )
+return
 }
 }
 
