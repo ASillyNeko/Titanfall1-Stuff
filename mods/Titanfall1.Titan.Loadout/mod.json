@@ -1,0 +1,20 @@
+{
+	"Name" : "TF1 Titan Loadout",
+	"Description" : "",
+	"Version": "1.0.0",
+	"LoadPriority": 21,
+	"RequiredOnClient": false,
+
+	"Scripts": [
+		{
+			"Path": "titanfall1_titan_loadout.nut",
+			"RunOn": "MP",
+			"ClientCallback": {
+				"After": "titanfall1_titan_loadout_init"
+			},
+			"ServerCallback": {
+				"After": "titanfall1_titan_loadout_init"
+			}
+		}
+	]
+}

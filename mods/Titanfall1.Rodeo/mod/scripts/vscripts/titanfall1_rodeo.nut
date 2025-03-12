@@ -35,6 +35,12 @@ void function TitanStandUpModded( entity titan )
 {
 if ( titan.GetTitanSoul().GetStance() == STANCE_KNEEL )
 return
+if ( titan.GetTitanSoul().GetStance() == STANCE_KNEELING )
+return
+if( !IsValid( GetPetTitanOwner( titan ) ) )
+return
+if ( IsPlayerEmbarking( GetPetTitanOwner( titan ) ) )
+return
 	//entity soul = titan.GetTitanSoul()
 	// stand up
 	ShowMainTitanWeapons( titan )
@@ -55,10 +61,17 @@ void function TitanKneelModded( entity titan )
 	if ( titan.GetTitanSoul().GetStance() == STANCE_STAND )
 	waitthread KneelToShowRiderModded( titan )
 	if ( !IsValid( titan ) )
-	return 
+	return
+
+	if( !IsValid( GetPetTitanOwner( titan ) ) )
+    return
+
+    if ( IsPlayerEmbarking( GetPetTitanOwner( titan ) ) )
+	return
 
 	thread PlayAnimGravity( titan, "at_MP_embark_idle_blended" )
 	SetStanceKneel( titan.GetTitanSoul() )
+	WaitFrame()
 }
 
 void function KneelToShowRiderModded( entity titan )
@@ -113,11 +126,14 @@ void function PilotStartRodeoOnTitan( entity pilot, entity titan )
 {
 if( IsValid( GetPetTitanOwner( titan ) ) )
 {
+if ( !IsPlayerEmbarking( GetPetTitanOwner( titan ) ) )
+{
 	if ( IsValid( GetEnemyRodeoPilot( titan ) ) )
 	{
     thread RodeoKneel( titan )
 	thread TitanElectricSmoke( titan )
 	}
+}
 }
 }
 
