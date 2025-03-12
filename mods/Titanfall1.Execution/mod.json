@@ -7,10 +7,7 @@
   "Scripts": [
     {
       "Path": "titanfall1_execution.nut",
-      "RunOn": "MP",
-      "ClientCallback": {
-        "After": "titanfall1_execution_init"
-      },
+      "RunOn": "SERVER",
       "ServerCallback": {
         "After": "titanfall1_execution_init"
       }

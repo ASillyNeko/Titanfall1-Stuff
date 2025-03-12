@@ -65,8 +65,9 @@ void function RandomTitanfall1( entity titan )
 TakeWeaponsForArray( titan, titan.GetMainWeapons() )
 
 // No Triple Threat Because It Does 0 Damage
+// No Arc Cannon Because It Kinda Doesn't Work With Auto Titans
 
-int RandomWeapon = RandomIntRange( 0, 5 )
+int RandomWeapon = RandomIntRange( 0, 4 )
 
 if( RandomWeapon == 0 )
 titan.GiveWeapon("mp_titanweapon_rocketeer_rocketstream")
@@ -76,13 +77,14 @@ if( RandomWeapon == 2 )
 titan.GiveWeapon("mp_titanweapon_xo16_vanguard")
 if( RandomWeapon == 3 )
 titan.GiveWeapon("mp_titanweapon_sniper")
-if( RandomWeapon == 4 )
-titan.GiveWeapon("mp_titanweapon_arc_cannon")
 
 int RandomTac = RandomIntRange( 0, 3 )
 
 if( RandomTac == 0 )
+{
 titan.GiveOffhandWeapon( "mp_titanweapon_vortex_shield", OFFHAND_SPECIAL )
+titan.GetOffhandWeapon(OFFHAND_SPECIAL).AddMod("slow_recovery_vortex")
+}
 if( RandomTac == 1 )
 titan.GiveOffhandWeapon( "mp_titanability_particle_wall", OFFHAND_SPECIAL )
 if( RandomTac == 2 )

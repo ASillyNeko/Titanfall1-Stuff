@@ -102,9 +102,9 @@ bool function MeleeThread_PilotVsEnemyInternal( SyncedMelee action, entity attac
 		}
 	)
 
-	thread MeleeThread_PilotVsEnemy_Attacker( action, attacker, target, isAttackerRef )
+	thread MeleeThread_PilotVsEnemy_AttackerModded( action, attacker, target, isAttackerRef )
 	// target's sequence is longer
-	waitthread MeleeThread_PilotVsEnemy_Target( action, attacker, target, isAttackerRef )
+	waitthread MeleeThread_PilotVsEnemy_TargetModded( action, attacker, target, isAttackerRef )
 
 	attacker.Signal( "SyncedMeleeComplete" )
 	return true
@@ -166,7 +166,6 @@ void function HandleCloakExecutionWithCloakedAttacker( entity player, PilotVsEne
 		player.Signal( "KillHandleCloakEnd" )
 	}
 }
-
 
 void function MeleeThread_PilotVsEnemy_Attacker( SyncedMelee action, entity attacker, entity target, bool isAttackerRef )
 {
@@ -289,6 +288,116 @@ void function MeleeThread_PilotVsEnemy_Attacker( SyncedMelee action, entity atta
 	wait duration
 }
 
+void function MeleeThread_PilotVsEnemy_AttackerModded( SyncedMelee action, entity attacker, entity target, bool isAttackerRef )
+{
+	attacker.EndSignal( "OnAnimationDone" )
+	attacker.EndSignal( "OnAnimationInterrupted" )
+	attacker.EndSignal( "OnDeath" )
+	attacker.EndSignal( "ScriptAnimStop" )
+
+	attacker.EndSignal( "OnDestroy" )
+	Assert( IsValid( target ) )
+	target.EndSignal( "OnDestroy" )
+
+
+	foreach ( AnimEventData animEventData in action.attacker3pAnimEvents )
+	{
+		AddAnimEvent( attacker, animEventData.eventName, animEventData.callback, animEventData.optionalVar )
+	}
+	AddAnimEvent( attacker, "synced_melee_enable_planting", EnablePlantingOnEntity )
+
+	PilotVsEnemyStruct dataStruct
+	OnThreadEnd(
+		function() : ( attacker, target, action, dataStruct )
+		{
+			if ( IsValid( attacker ) )
+			{
+				DeleteAnimEvent( attacker, "synced_melee_enable_planting" )
+
+				if ( dataStruct.clearInvulnerable )
+				{
+					attacker.ClearInvulnerable()
+				}
+
+				if ( attacker.IsPlayer() )
+				{
+					attacker.PlayerMelee_ExecutionEndAttacker()
+					ClearPlayerAnimViewEntity( attacker )
+					DeployAndEnableWeapons( attacker )
+
+					RestoreCloakAfterMelee( attacker, dataStruct )
+					#if MP
+					IncrementStatForPilotExecutionWhileCloaked( attacker, target, dataStruct )
+					#endif
+				}
+
+				foreach ( AnimEventData animEventData in action.attacker3pAnimEvents )
+				{
+					DeleteAnimEvent( attacker, animEventData.eventName )
+				}
+			}
+
+			if ( !IsAlive( attacker ) )
+				attacker.Anim_Stop()
+		}
+	)
+
+	FirstPersonSequenceStruct attackerSequence
+	attackerSequence.blendTime = 0.4
+	attackerSequence.attachment = "ref"
+	attackerSequence.thirdPersonAnim = action.attackerAnimation3p
+	attackerSequence.firstPersonAnim = action.attackerAnimation1p
+	attackerSequence.thirdPersonCameraAttachments = [action.thirdPersonCameraAttachment]
+	attackerSequence.thirdPersonCameraVisibilityChecks = true
+
+	if ( isAttackerRef )
+	{
+		attackerSequence.noParent = true
+		attackerSequence.playerPushable = true
+		attackerSequence.enablePlanting = true
+	}
+	else
+	{
+		attackerSequence.useAnimatedRefAttachment = true
+	}
+
+	float duration = attacker.GetSequenceDuration( attackerSequence.thirdPersonAnim )
+
+	if ( attacker.IsPlayer() )
+	{
+		float executionEndTime = Time() + duration
+		attacker.PlayerMelee_ExecutionStartAttacker( executionEndTime )
+		attacker.Lunge_ClearTarget()
+		HolsterViewModelAndDisableWeapons( attacker )
+
+		if ( action.ref == "execution_cloak" ) //Special case for cloak execution
+		{
+			HandleCloakExecutionWithCloakedAttacker( attacker, dataStruct, action )
+		}
+		else
+		{
+			DisableCloakBeforeMelee( attacker, dataStruct )
+		}
+
+		if ( IsSingleplayer() )
+		{
+			dataStruct.clearInvulnerable = true
+			attacker.SetInvulnerable()
+			thread LowerEnemyAccuracy( attacker, duration )
+		}
+	}
+
+	if ( isAttackerRef )
+	{		
+		thread FirstPersonSequenceModded( attackerSequence, attacker )
+	}
+	else
+	{
+		thread FirstPersonSequenceModded( attackerSequence, attacker, target )
+	}
+
+	wait duration
+}
 
 void function MeleeThread_PilotVsEnemy_Target( SyncedMelee action, entity attacker, entity target, bool isAttackerRef )
 {
@@ -434,6 +543,144 @@ void function MeleeThread_PilotVsEnemy_Target( SyncedMelee action, entity attack
 			FirstPersonSequenceForce1P( targetSequence, target )
 		#endif
 		
+		waitthread FirstPersonSequence( targetSequence, target )
+	}
+}
+
+void function MeleeThread_PilotVsEnemy_TargetModded( SyncedMelee action, entity attacker, entity target, bool isAttackerRef )
+{
+	attacker.EndSignal( "OnAnimationDone" )
+	attacker.EndSignal( "OnAnimationInterrupted" )
+	attacker.EndSignal( "OnDeath" )
+	attacker.EndSignal( "ScriptAnimStop" )
+
+	attacker.EndSignal( "OnDestroy" )
+	Assert( IsValid( target ) )
+	target.EndSignal( "OnDestroy" )
+
+	foreach ( AnimEventData animEventData in action.target3pAnimEvents )
+	{
+		AddAnimEvent( target, animEventData.eventName, animEventData.callback, animEventData.optionalVar )
+	}
+	AddAnimEvent( target, "synced_melee_enable_planting", EnablePlantingOnEntity )
+
+	PilotVsEnemyStruct dataStruct
+
+	OnThreadEnd(
+		function() : ( attacker, target, action, dataStruct )
+		{
+			if ( IsValid( target ) )
+			{
+				if ( target.IsNPC() && IsMultiplayer() )
+				{
+					SetForceDrawWhileParented( target, false )
+				}
+
+				TargetClearedExecuted( target )
+				DeleteAnimEvent( target, "mark_for_death" )
+				DeleteAnimEvent( target, "phase_gib" )
+
+				foreach ( AnimEventData animEventData in action.target3pAnimEvents )
+				{
+					DeleteAnimEvent( target, animEventData.eventName )
+				}
+				DeleteAnimEvent( target, "synced_melee_enable_planting" )
+
+				bool isAlive = IsAlive( target )
+
+				if ( target.IsPlayer() )
+				{
+					EnableOffhandWeapons( target )
+					if ( isAlive )
+						target.DeployWeapon()
+				}
+
+				if ( isAlive )
+				{
+					if ( target.e.markedForExecutionDeath ) //Kill off target if he already reached blackout part of melee
+					{
+						entity killCreditAttacker = null //If the attacker disconnected, we don't have a player to give credit to, that's fine. Script will not error
+						if ( IsValid( target.e.syncedMeleeAttacker ) )
+							killCreditAttacker = target.e.syncedMeleeAttacker
+						//printt( "Killing off target "  + target + " because he already reached blackout part of execution!" )
+
+						int damageAmount = target.GetMaxHealth() + 1
+						target.TakeDamage( damageAmount, killCreditAttacker, killCreditAttacker, { forceKill = true, damageType = DMG_MELEE_EXECUTION, damageSourceId = eDamageSourceId.human_execution } )
+						//markedForExecutionDeath will be cleared in MarkForDeath() which sets it in the first place
+					}
+
+					if ( target.IsPlayer() )
+						RestoreCloakAfterMelee( target, dataStruct )
+				}
+
+				if ( IsValid( target.e.syncedMeleeAttacker ) )
+				{
+					if ( IsValid( target.e.lastSyncedMeleeAttacker ) )
+					{
+						target.e.lastSyncedMeleeAttacker = null
+					}
+
+					target.e.lastSyncedMeleeAttacker = target.e.syncedMeleeAttacker
+					target.e.syncedMeleeAttacker = null
+				}
+			}
+		}
+	)
+
+	TargetSetExecutedBy( target, attacker )
+
+	AddAnimEvent( target, "mark_for_death", MarkForDeath )
+	AddAnimEvent( target, "phase_gib", PhaseGib )
+
+	FirstPersonSequenceStruct targetSequence
+	targetSequence.blendTime = 0.25
+	targetSequence.attachment = "ref"
+	targetSequence.thirdPersonAnim = action.targetAnimation3p
+	targetSequence.thirdPersonCameraAttachments = [action.thirdPersonCameraAttachment]
+	targetSequence.thirdPersonCameraVisibilityChecks = true
+
+	if ( isAttackerRef )
+	{
+		targetSequence.useAnimatedRefAttachment = true
+		if ( target.IsNPC() && IsMultiplayer() )
+		{
+			SetForceDrawWhileParented( target, true )
+		}
+	}
+	else
+	{
+		targetSequence.noParent = true
+		targetSequence.playerPushable = true
+		targetSequence.enablePlanting = true
+	}
+
+
+	if ( target.IsPlayer() )
+	{
+		HolsterViewModelAndDisableWeapons( target )
+		targetSequence.firstPersonAnim = action.targetAnimation1p
+		DisableCloakBeforeMelee( target, dataStruct )
+	}
+
+	if ( attacker.IsPlayer() )
+	{
+		if ( MeleeTargetrequiresDataKnife( target ) )
+		{
+			string tag = GetTagForKnifeMeleeTarget( target )
+			thread AttachPlayerModelForDuration( attacker, DATA_KNIFE_MODEL, tag, 2.2 )
+		}
+		else if ( action.attachTag1p != "" && action.attachModel1p != $"" )
+		{
+			thread AttachPlayerModelForDuration( attacker, action.attachModel1p, action.attachTag1p, 2.2 )
+		}
+	}
+
+	if ( isAttackerRef )
+	{
+		waitthread FirstPersonSequence( targetSequence, target, attacker )
+	}
+	else
+	{
 		waitthread FirstPersonSequence( targetSequence, target )
 	}
 }

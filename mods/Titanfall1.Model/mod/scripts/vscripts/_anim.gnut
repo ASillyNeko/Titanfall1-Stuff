@@ -3,6 +3,7 @@ untyped
 global function Anim_Init
 
 global function FirstPersonSequence
+global function FirstPersonSequenceModded
 global function GetAnim
 global function HasAnim
 global function SetAnim
@@ -1076,8 +1077,368 @@ void function FirstPersonSequence( FirstPersonSequenceStruct sequence, entity pl
 	if ( doFirstPersonAnim )
 	{
 		Assert( player.IsPlayer(), player + " is not a player" )
-		if( player.IsTitan() )
 		firstPersonProxy = player.GetFirstPersonProxy()
+		if ( !IsValid( firstPersonProxy ) || !EntHasModelSet( firstPersonProxy ) )
+		{
+			doFirstPersonAnim = false;
+		}
+	}
+
+	if ( doFirstPersonAnim )
+	{
+		firstPersonProxy.ShowFirstPersonProxy()
+
+		if ( sequence.renderWithViewModels )
+			firstPersonProxy.RenderWithViewModels( true )
+		else
+			firstPersonProxy.RenderWithViewModels( false )
+
+		firstPersonProxy.ClearParent()
+		firstPersonProxy.SetAbsOrigin( player.GetOrigin() )
+		firstPersonProxy.SetAbsAngles( player.GetAngles() )
+
+		// Set anim view entity *after* setting the proxy's origin so that we calculate our initial view offset correctly (for lerping)
+		SetPlayerAnimViewEntity( player, firstPersonProxy )
+		firstPersonProxy.SetNextThinkNow()
+		SetForceDrawWhileParented( firstPersonProxy, true )
+	}
+	else if ( sequence.thirdPersonCameraAttachments.len() > 0 )
+	{
+		if ( player.IsPlayer() )
+		{
+			entity fpProxy = player.GetFirstPersonProxy() //Shouldn't ever need to show the first person proxy when doing thirdPersonCameraAttachments; hide it explicitly here to stop it from showing up when chaining animations
+			if ( IsValid( fpProxy )  )
+				fpProxy.HideFirstPersonProxy()
+
+			if ( sequence.thirdPersonCameraEntity )
+			{
+				SetPlayerAnimViewEntity( player, sequence.thirdPersonCameraEntity )
+			}
+			else
+			{
+				SetPlayerAnimViewEntity( player, player )
+			}
+
+			player.AnimViewEntity_SetThirdPersonCameraAttachments( sequence.thirdPersonCameraAttachments )
+			if ( sequence.thirdPersonCameraVisibilityChecks )
+			{
+				player.AnimViewEntity_EnableThirdPersonCameraVisibilityChecks()
+			}
+		}
+	}
+	else
+	{
+		if ( player.IsPlayer() )
+		{
+			ClearPlayerAnimViewEntity( player )
+		}
+	}
+
+	entity soul
+
+	if ( IsValid(ent) )
+	{
+		// the entity we are animating relative to may change during the animation
+		if ( IsSoul( ent ) )
+		{
+			soul = ent
+			ent = soul.GetTitan()
+			if ( !IsValid( ent ) )
+				return
+		}
+		else if ( HasSoul( ent ) )
+		{
+			soul = ent.GetTitanSoul()
+		}
+	}
+
+	CalcSequenceBlendTime( sequence, player, ent )
+
+	if ( player.IsPlayer() )
+	{
+		if ( sequence.teleport )
+		{
+			player.AnimViewEntity_SetLerpInTime( 0.0 )
+			player.PlayerCone_SetLerpTime( 0.0 )
+			player.SnapToAbsOrigin( player.GetOrigin() )
+		}
+		else
+		{
+			if ( sequence.noViewLerp || (sequence.blendTime <= 0.0) )
+			{
+				player.AnimViewEntity_SetLerpInTime( 0.0 )
+				player.PlayerCone_SetLerpTime( 0.0 )
+			}
+			else
+			{
+				player.AnimViewEntity_SetLerpInTime( sequence.blendTime )
+				player.PlayerCone_SetLerpTime( sequence.blendTime )
+			}
+		}
+
+		if ( sequence.thirdPersonCameraAttachments.len() == 0 )
+		{
+			if ( sequence.firstPersonBlendOutTime >= 0.0 )
+			{
+				player.AnimViewEntity_SetLerpOutTime( sequence.firstPersonBlendOutTime )
+			}
+			else
+			{
+				player.AnimViewEntity_SetLerpOutTime( 0.4 )
+			}
+		}
+
+		if ( !doFirstPersonAnim || !sequence.playerPushable )
+		{
+			player.SnapFeetToEyes()
+		}
+	}
+
+	if ( ent && !sequence.noParent )
+	{
+		local optionalTag
+		if ( sequence.attachment != "" )
+		{
+			optionalTag = sequence.attachment
+		}
+		else
+		{
+			optionalTag = ""
+		}
+
+		if ( player.GetParent() != ent )
+		{
+			// you could be parenting from one tag to another but we don't do
+			// that anywhere currently, and if we want to do it we can do some
+			// special stuff
+			player.SetParent( ent, optionalTag, false, sequence.blendTime )
+		}
+	}
+
+	if ( doFirstPersonAnim )
+	{
+		if ( sequence.teleport )
+		{
+			firstPersonProxy.SnapToAbsOrigin( player.GetOrigin() )
+		}
+
+		if ( sequence.playerPushable )
+		{
+			firstPersonProxy.SetParent( player, "", false )
+		}
+		else
+		{
+			firstPersonProxy.SetToSameParentAs( player )
+		}
+	}
+
+	if ( sequence.relativeAnim != "" )
+	{
+		if ( sequence.teleport )
+		{
+			thread PlayAnimGravityClientSyncing( ent, sequence.relativeAnim, null, null, 0.0 )
+		}
+		else
+		{
+			thread PlayAnimGravityClientSyncing( ent, sequence.relativeAnim )
+		}
+
+		if ( sequence.setInitialTime != 0.0 )
+			ent.Anim_SetInitialTime( sequence.setInitialTime )
+	}
+
+	if ( doFirstPersonAnim )
+	{
+		if ( ent )
+		{
+			thread PlayAnim( firstPersonProxy, sequence.firstPersonAnim, ent, sequence.attachment, sequence.blendTime )
+		}
+		else if ( sequence.playerPushable )
+		{
+			firstPersonProxy.Anim_Play( sequence.firstPersonAnim )
+			firstPersonProxy.Anim_DisableUpdatePosition()
+		}
+		else if ( sequence.gravity )
+		{
+			thread PlayAnimGravityClientSyncing( firstPersonProxy, sequence.firstPersonAnim, sequence.origin, sequence.angles, sequence.blendTime )
+		}
+		else
+		{
+			thread PlayAnim( firstPersonProxy, sequence.firstPersonAnim, sequence.origin, sequence.angles, sequence.blendTime )
+		}
+
+		// BROKEN - Anim_EnablePlanting() only works on players and NPCs
+		// if ( sequence.enablePlanting )
+		// {
+		// 	viewmodel.Anim_EnablePlanting()
+		// }
+
+		if ( sequence.setInitialTime != 0.0 )
+		{
+			firstPersonProxy.Anim_SetInitialTime( sequence.setInitialTime )
+		}
+
+		if ( sequence.useAnimatedRefAttachment )
+		{
+			firstPersonProxy.Anim_EnableUseAnimatedRefAttachmentInsteadOfRootMotion()
+		}
+
+		if ( sequence.hideProxy )
+		{
+			firstPersonProxy.HideFirstPersonProxy()
+		}
+	}
+
+	if ( sequence.thirdPersonAnim != "" )
+	{
+		if ( ent )
+		{
+			thread PlayAnim( player, sequence.thirdPersonAnim, ent, sequence.attachment, sequence.blendTime )
+		}
+		else if ( player.IsPlayer() && sequence.playerPushable )
+		{
+			player.Anim_Play( sequence.thirdPersonAnim )
+			player.Anim_DisableUpdatePosition()
+		}
+		else if ( sequence.gravity )
+		{
+			thread PlayAnimGravityClientSyncing( player, sequence.thirdPersonAnim, sequence.origin, sequence.angles, sequence.blendTime )
+		}
+		else
+		{
+			thread PlayAnim( player, sequence.thirdPersonAnim, sequence.origin, sequence.angles, sequence.blendTime )
+		}
+
+		if ( sequence.enablePlanting )
+			player.Anim_EnablePlanting()
+
+		if ( sequence.viewConeFunction != null )
+		{
+			if ( sequence.thirdPersonCameraAttachments.len() == 0 )
+			{
+				sequence.viewConeFunction( player )
+			}
+		}
+
+		if ( sequence.setInitialTime != 0.0 )
+			player.Anim_SetInitialTime( sequence.setInitialTime )
+
+		if ( sequence.useAnimatedRefAttachment )
+			player.Anim_EnableUseAnimatedRefAttachmentInsteadOfRootMotion()
+
+		WaittillAnimDone( player )
+	}
+
+	if ( doFirstPersonAnim && IsValid( firstPersonProxy ) && firstPersonProxy.Anim_IsActive() && !firstPersonProxy.IsSequenceFinished() )
+	{
+		WaittillAnimDone( firstPersonProxy )
+	}
+
+	if ( !IsValid( player ) )
+		return
+
+	if ( player.IsPlayer() )
+	{
+		if ( !IsAlive( player ) )
+			return
+
+ 		if ( IsDisconnected( player ) )
+ 			return
+	}
+	else
+	if ( player.IsNPC() )
+	{
+		if ( !IsAlive( player ) )
+			return
+	}
+
+	// time passed
+	if ( soul )
+	{
+		if ( !IsValid( soul ) )
+			return
+
+		ent = soul.GetTitan()
+		if ( !IsAlive( ent ) )
+			return
+	}
+
+	if ( sequence.thirdPersonAnimIdle != "" )
+	{
+		//thread PlayAnim( player, sequence.thirdPersonAnimIdle, ent, sequence.attachment, 0 )
+		if ( ent )
+		{
+			thread PlayAnim( player, sequence.thirdPersonAnimIdle, ent, sequence.attachment, sequence.blendTime )
+		}
+		else if ( player.IsPlayer() && sequence.playerPushable )
+		{
+			player.Anim_Play( sequence.thirdPersonAnimIdle )
+			player.Anim_DisableUpdatePosition()
+		}
+		else
+		{
+			thread PlayAnim( player, sequence.thirdPersonAnimIdle, sequence.origin, sequence.angles, sequence.blendTime )
+		}
+	}
+
+	if ( sequence.firstPersonAnimIdle != "" )
+	{
+		firstPersonProxy = player.GetFirstPersonProxy()
+		firstPersonProxy.ShowFirstPersonProxy()
+
+		if ( IsValid( firstPersonProxy ) && EntHasModelSet( firstPersonProxy ) ) //JFS: Defensive fix for player not having view models sometimes
+		{
+			if ( sequence.renderWithViewModels )
+				firstPersonProxy.RenderWithViewModels( true )
+			else
+				firstPersonProxy.RenderWithViewModels( false )
+
+			SetPlayerAnimViewEntity( player, firstPersonProxy )
+			firstPersonProxy.SetNextThinkNow()
+
+			firstPersonProxy.SetAbsOrigin( player.GetOrigin() )
+			firstPersonProxy.SetAbsAngles( player.GetAngles() )
+
+			firstPersonProxy.Anim_Play( sequence.firstPersonAnimIdle )
+
+			if ( sequence.playerPushable )
+			{
+				firstPersonProxy.SetParent( player, "", false )
+				firstPersonProxy.Anim_DisableUpdatePosition()
+			}
+			else
+			{
+				firstPersonProxy.SetToSameParentAs( player )
+			}
+		}
+	}
+
+	if ( sequence.thirdPersonAnimIdle != "" && sequence.firstPersonAnimIdle != "" )
+	{
+		if ( sequence.viewConeFunction != null )
+			sequence.viewConeFunction( player )
+	}
+}
+
+void function FirstPersonSequenceModded( FirstPersonSequenceStruct sequence, entity player, entity ent = null )
+{
+	player.Signal( "NewFirstPersonSequence" )
+	player.EndSignal( "NewFirstPersonSequence" )
+	player.EndSignal( "ScriptAnimStop" )
+
+	player.SetVelocity( <0,0,0> ) // fix this
+	if ( player.IsPlayer() && sequence.snapPlayerFeetToEyes )
+	{
+		player.SnapFeetToEyes()
+	}
+
+	//figure out if we have/should do a first person sequence and handle Spawn slots.
+	bool doFirstPersonAnim = sequence.firstPersonAnim != ""
+
+	entity firstPersonProxy
+	if ( doFirstPersonAnim )
+	{
+		Assert( player.IsPlayer(), player + " is not a player" )
 		if ( !IsValid( firstPersonProxy ) || !EntHasModelSet( firstPersonProxy ) )
 		{
 			doFirstPersonAnim = false;

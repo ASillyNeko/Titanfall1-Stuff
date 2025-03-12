@@ -348,6 +348,7 @@ entity function NpcPilotCallsInTitan( entity pilot, vector origin, vector angles
 	entity titan = CreateNPC( "npc_titan", pilot.GetTeam(), origin, angles )
 	SetSpawnOption_AISettings( titan, titanSettings )
 	DispatchSpawn( titan )
+	thread Titanfall1Model( titan )
 	NpcPilotSetPetTitan( pilot, titan )
 
 	//call it in
@@ -368,6 +369,31 @@ entity function NpcPilotCallsInTitan( entity pilot, vector origin, vector angles
 	return titan
 }
 
+void function Titanfall1Model( entity titan )
+{
+	string attackerType = GetTitanCharacterName( titan )
+	switch ( attackerType )
+	    {
+		case "ronin": titan.SetModel($"models/titans/stryder/stryder_titan.mdl")
+                        break;
+		case "scorch": titan.SetModel($"models/titans/ogre/ogre_titan.mdl")
+                        break;
+		case "legion": titan.SetModel($"models/titans/ogre/ogre_titan.mdl")
+			            break;
+		case "ion": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+		            titan.SetBodygroup( 4, 1 )
+                        break;
+		case "tone": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+		             titan.SetBodygroup( 4, 1 )
+                        break;
+		case "vanguard": titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+		                 titan.SetBodygroup( 4, 1 )
+                        break;
+        case "northstar": titan.SetModel($"models/titans/stryder/stryder_titan.mdl")
+			            break;
+	    }
+}
+
 void function AntiEliteTitanExecution( entity titan )
 {
 entity soul = titan.GetTitanSoul()
@@ -377,7 +403,7 @@ GivePassive( soul, ePassives.PAS_RONIN_AUTOSHIFT )
 void function RandomPilotWeapon( entity pilot )
 {
 TakeWeaponsForArray( pilot, pilot.GetMainWeapons() )
-int randompilotweapon = RandomIntRange( 0, 19 )
+int randompilotweapon = RandomIntRange( 0, 18 )
 if ( randompilotweapon == 0 )
 pilot.GiveWeapon( "mp_weapon_rspn101_og" )
 if ( randompilotweapon == 1 )
@@ -411,10 +437,8 @@ pilot.GiveWeapon( "mp_weapon_car" )
 if ( randompilotweapon == 15 )
 pilot.GiveWeapon( "mp_weapon_doubletake" )
 if ( randompilotweapon == 16 )
-pilot.GiveWeapon( "mp_weapon_esaw" )
-if ( randompilotweapon == 17 )
 pilot.GiveWeapon( "mp_weapon_shotgun" )
-if ( randompilotweapon == 18 )
+if ( randompilotweapon == 17 )
 pilot.GiveWeapon( "mp_weapon_lmg" )
 }
 

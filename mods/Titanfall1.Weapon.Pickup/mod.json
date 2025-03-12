@@ -1,5 +1,5 @@
 {
-	"Name" : "TF1 Titan Loadout",
+	"Name" : "TF1 Weapon Pickup",
 	"Description" : "",
 	"Version": "1.0.0",
 	"LoadPriority": 21,
@@ -7,10 +7,10 @@
 
 	"Scripts": [
 		{
-			"Path": "titanfall1_titan_loadout.nut",
+			"Path": "titanfall1.weapon.pickup.nut",
 			"RunOn": "SERVER",
 			"ServerCallback": {
-				"After": "titanfall1_titan_loadout_init"
+				"After": "titanfall1_weapon_pickup_init"
 			}
 		}
 	]
