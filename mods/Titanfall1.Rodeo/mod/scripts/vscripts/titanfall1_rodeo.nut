@@ -165,8 +165,16 @@ WaitFrame()
 void function RemoveAmmoPerSecond( entity titan )
 {
 entity smoketac = titan.GetOffhandWeapon( OFFHAND_SPECIAL )
+if( !IsValid( smoketac ) )
+return
+if( !IsValid( titan ) )
+return
 while( smoketac.GetWeaponPrimaryAmmoCount() > 0 )
 {
+if( !IsValid( smoketac ) )
+return
+if( !IsValid( titan ) )
+return
 smoketac.SetWeaponPrimaryAmmoCount( smoketac.GetWeaponPrimaryAmmoCount() - 1 )
 if ( smoketac.GetWeaponPrimaryAmmoCount() == 0 )
 return
