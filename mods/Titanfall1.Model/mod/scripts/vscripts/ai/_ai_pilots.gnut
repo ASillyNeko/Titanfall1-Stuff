@@ -140,6 +140,8 @@ void function CaptainThink( entity npc )
 
 void function threadCaptainThink( entity npc )
 {
+    if( GetMapName() == "mp_wargames" && (GetGameState() < eGameState.Playing))
+	return
 	npc.EndSignal( "OnDestroy" )
 	npc.EndSignal( "OnDeath" )
 
@@ -216,8 +218,6 @@ function NpcPilotCallTitanThink( entity pilot )
 
 			//call in a titan, run to it, and embark
 			//in SP by default, the friendlys do NOT do the beacon tell
-			vector origin = GetPlayerCrosshairOrigin( pilot )
-	        vector angles = pilot.EyeAngles()
 			titan = NpcPilotCallsInAndEmbarksTitan( pilot, spawnPoint.origin, spawnPoint.angles )
 			titan.SetTitle( title )
 		}
