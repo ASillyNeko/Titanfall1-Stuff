@@ -416,6 +416,16 @@ function __PlayAnim( guy, animation_name, reference = null, optionalTag = null, 
 					}
 					catch( err )
 			        {
+					if ( guy.IsNPC() )
+	                {
+	                if ( !IsPlayerEmbarking( GetPetTitanOwner( guy ) ) )
+	                return
+	                }
+					if ( !guy.IsNPC() )
+	                {
+	                if ( !IsPlayerEmbarking( guy ) )
+	                return
+	                }
 						if ( guy.IsNPC() )
 				            guy.Anim_ScriptedPlayWithRefPoint( "at_mount_stand_front", reference, optionalTag, blendTime )
 				        else
@@ -425,12 +435,11 @@ function __PlayAnim( guy, animation_name, reference = null, optionalTag = null, 
 				}
 				else
 				{
-
-				    if ( guy.IsNPC() )
-				        guy.Anim_ScriptedPlayWithRefPoint( animation, reference, optionalTag, blendTime )
-				    else
-					    guy.Anim_PlayWithRefPoint( animation, reference, optionalTag, blendTime )
-				    return
+				if ( guy.IsNPC() )
+					guy.Anim_ScriptedPlayWithRefPoint( animation, reference, optionalTag, blendTime )
+				else
+					guy.Anim_PlayWithRefPoint( animation, reference, optionalTag, blendTime )
+				return
 				}
 			}
 
@@ -485,7 +494,8 @@ function __PlayAnim( guy, animation_name, reference = null, optionalTag = null, 
 
     local origin = reference.GetOrigin()
     local angles = reference.GetAngles()
-    
+	if ( guy.GetModelName() == $"models/titans/stryder/stryder_titan.mdl" || guy.GetModelName() == $"models/titans/ogre/ogre_titan.mdl" || guy.GetModelName() == $"models/titans/atlas/atlas_titan.mdl" )
+	{
 	try
 	{
         if ( guy.IsNPC() )
@@ -495,10 +505,29 @@ function __PlayAnim( guy, animation_name, reference = null, optionalTag = null, 
 	}
 	catch(err)
 	{
+	if ( guy.IsNPC() )
+	{
+	if ( !IsPlayerEmbarking( GetPetTitanOwner( guy ) ) )
+	return
+	}
+	if ( !guy.IsNPC() )
+	{
+	if ( !IsPlayerEmbarking( guy ) )
+	return
+	}
 		if ( guy.IsNPC() )
 	        guy.Anim_ScriptedPlayWithRefPoint( "at_mount_kneel_above", origin, angles, blendTime )
         else
 	        guy.Anim_PlayWithRefPoint( "at_mount_kneel_above", origin, angles, blendTime )
+	}
+	}
+	else
+	{
+        if ( guy.IsNPC() )
+	        guy.Anim_ScriptedPlayWithRefPoint( animation, origin, angles, blendTime )
+        else
+	        guy.Anim_PlayWithRefPoint( animation, origin, angles, blendTime )
+		return
 	}
 }
 
@@ -1780,7 +1809,6 @@ void function FirstPersonSequenceModded( FirstPersonSequenceStruct sequence, ent
 			sequence.viewConeFunction( player )
 	}
 }
-
 
 function ClampPlayerViewCone( player )
 {

@@ -63,6 +63,7 @@ WaitFrame()
 void function RandomTitanfall1( entity titan )
 {
 TakeWeaponsForArray( titan, titan.GetMainWeapons() )
+titan.GiveOffhandWeapon( "melee_titan_punch", OFFHAND_MELEE )
 
 // No Triple Threat Because It Does 0 Damage
 // No Arc Cannon Because It Kinda Doesn't Work With Auto Titans
@@ -107,6 +108,7 @@ titan.GiveOffhandWeapon( "mp_titanweapon_shoulder_rockets", OFFHAND_ORDNANCE )
 
 void function Titanfall1TitanLoadout( entity titan )
 {
+    titan.TakeOffhandWeapon( OFFHAND_MELEE )
     titan.TakeOffhandWeapon(OFFHAND_EQUIPMENT)
     titan.GiveOffhandWeapon( "mp_titancore_amp_core", OFFHAND_EQUIPMENT )
 	titan.TakeOffhandWeapon(OFFHAND_ANTIRODEO)
