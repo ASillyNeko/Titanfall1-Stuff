@@ -22,4 +22,4 @@ Nekos.Titanfall1.Titan.Loadout | Changes Titan Loadout To A Random Titanfall 1 T
 
 Nekos.Titanfall1.Weapon.Pickup | Allows Players To Pickup Weapons From Dead Titans
 
-Nekos.TF1.Campaign | This Could Be Added In The Future
+Nekos.Titanfall1.Campaign | This Could Be Added In The Future
