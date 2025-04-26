@@ -1,0 +1,27 @@
+{
+	"Name": "Neko's TF1 Campaign",
+	"Description": "",
+	"Version": "1.0.0",
+	"LoadPriority": 21,
+	"RequiredOnClient": false,
+	"Dependencies": {
+		"TITANFALL1_MODEL": "Neko's TF1 Model",
+		"TITANFALL1_RANDOM_WEAPON": "Neko's TF1 Titan Loadout"
+	},
+	"Scripts": [
+		{
+			"Path": "gamemodes/sh_gamemode_campaign_carousel.nut",
+			"RunOn": "( CLIENT || SERVER ) && MP",
+			"ServerCallback": {
+				"Before": "Campaign_CarouselMode_Init"
+			},
+			"ClientCallback": {
+				"Before": "Campaign_CarouselMode_Init"
+			}
+		},
+		{
+			"Path": "gamemodes/_gamemode_campaign_carousel.nut",
+			"RunOn": "SERVER && MP"
+		}
+	]
+}
