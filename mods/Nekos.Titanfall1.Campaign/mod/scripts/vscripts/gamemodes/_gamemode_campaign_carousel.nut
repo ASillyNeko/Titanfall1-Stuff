@@ -63,7 +63,7 @@ bool didwait = false
   thread Attrition_militia()
   return
   }
-  if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 8 )
+  if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 4 )
   thread SpawnNPCDroppod( TEAM_MILITIA, "npc_spectre" )
   else
   thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
@@ -89,7 +89,7 @@ bool didwait = false
   thread Attrition_imc()
   return
   }
-  if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 8 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
+  if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 4 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
   thread SpawnNPCDroppod( TEAM_IMC, "npc_spectre" )
   else
   thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
