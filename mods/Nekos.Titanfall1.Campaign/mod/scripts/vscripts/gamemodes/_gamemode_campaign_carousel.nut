@@ -4,6 +4,7 @@ struct
 {
 int militia_npc_count = 0
 int imc_npc_count = 0
+int allspawnednpcs = 0
 }file
 
 array<string> aitdm_levels = [
@@ -50,7 +51,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.militia_npc_count <= 12 )
+  if( file.militia_npc_count <= 12 && file.allspawnednpcs <= 36 )
   {
   wait 1
   didwait = true
@@ -76,7 +77,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.imc_npc_count <= 12 )
+  if( file.imc_npc_count <= 12 && file.allspawnednpcs <= 36 )
   {
   wait 1
   didwait = true
@@ -106,9 +107,11 @@ OnThreadEnd(
 		file.militia_npc_count = file.militia_npc_count - 1
 		if( team == TEAM_IMC )
 		file.imc_npc_count = file.imc_npc_count - 1
+		file.allspawnednpcs = file.allspawnednpcs - 1
 	}
 )
-WaitForever()
+while( team == npc.GetTeam() )
+WaitFrame()
 }
 
 void function SpawnNPCDroppod( int team, string npc )
@@ -130,6 +133,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	file.militia_npc_count = file.militia_npc_count + 4
 	if( team == TEAM_IMC )
 	file.imc_npc_count = file.imc_npc_count + 4
+	file.allspawnednpcs = file.allspawnednpcs + 4
 	
 	InitFireteamDropPod( pod )
 		
