@@ -4,7 +4,8 @@ struct
 {
 int militia_npc_count = 0
 int imc_npc_count = 0
-int allspawnednpcs = 0
+int militia_spectre_count = 0
+int imc_spectre_count = 0
 }file
 
 array<string> aitdm_levels = [
@@ -51,7 +52,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.militia_npc_count <= 12 && file.allspawnednpcs <= 36 )
+  if( file.militia_npc_count <= 12 )
   {
   wait 1
   didwait = true
@@ -62,10 +63,10 @@ bool didwait = false
   thread Attrition_militia()
   return
   }
-  if ( RandomInt( 100 ) < 50 )
-  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
-  else
+  if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 8 )
   thread SpawnNPCDroppod( TEAM_MILITIA, "npc_spectre" )
+  else
+  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
  }
 }
 
@@ -77,7 +78,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.imc_npc_count <= 12 && file.allspawnednpcs <= 36 )
+  if( file.imc_npc_count <= 12 )
   {
   wait 1
   didwait = true
@@ -88,10 +89,10 @@ bool didwait = false
   thread Attrition_imc()
   return
   }
-  if ( RandomInt( 100 ) < 50 )
-  thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
-  else
+  if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 8 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
   thread SpawnNPCDroppod( TEAM_IMC, "npc_spectre" )
+  else
+  thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
  }
 }
 
@@ -100,18 +101,21 @@ void function DeathCheck( entity npc )
 npc.EndSignal( "OnDestroy" )
 npc.EndSignal( "OnDeath" )
 int team = npc.GetTeam()
+string npcclass = npc.GetClassName()
 OnThreadEnd(
-	function() : ( team )
+	function() : ( team, npcclass )
 	{
 		if( team == TEAM_MILITIA )
 		file.militia_npc_count = file.militia_npc_count - 1
 		if( team == TEAM_IMC )
 		file.imc_npc_count = file.imc_npc_count - 1
-		file.allspawnednpcs = file.allspawnednpcs - 1
+		if( team == TEAM_MILITIA && npcclass == "npc_spectre" )
+		file.militia_spectre_count = file.militia_spectre_count - 1
+		if( team == TEAM_IMC && npcclass == "npc_spectre" )
+		file.imc_spectre_count = file.imc_spectre_count - 1
 	}
 )
-while( team == npc.GetTeam() )
-WaitFrame()
+WaitForever()
 }
 
 void function SpawnNPCDroppod( int team, string npc )
@@ -133,7 +137,10 @@ void function SpawnNPCDroppod( int team, string npc )
 	file.militia_npc_count = file.militia_npc_count + 4
 	if( team == TEAM_IMC )
 	file.imc_npc_count = file.imc_npc_count + 4
-	file.allspawnednpcs = file.allspawnednpcs + 4
+	if( team == TEAM_MILITIA && npc == "npc_spectre" )
+	file.militia_spectre_count = file.militia_spectre_count + 4
+	if( team == TEAM_IMC && npc == "npc_spectre" )
+	file.imc_spectre_count = file.imc_spectre_count + 4
 	
 	InitFireteamDropPod( pod )
 		
