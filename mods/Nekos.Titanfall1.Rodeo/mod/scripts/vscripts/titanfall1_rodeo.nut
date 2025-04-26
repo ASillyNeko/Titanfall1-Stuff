@@ -1,22 +1,10 @@
 global function titanfall1_rodeo_init
 
 
-void function titanfall1_rodeo_init() {
+void function titanfall1_rodeo_init() 
+{
 AddOnRodeoStartedCallback( PilotStartRodeoOnTitan )
 AddCallback_OnTitanBecomesPilot( OnTitanBecomesPilot )
-AddCallback_OnPlayerRespawned( TakeLowProfilePassive )
-AddCallback_OnPlayerGetsNewPilotLoadout( TakeLowProfilePassiveForLoadoutChange )
-}
-
-void function TakeLowProfilePassive( entity player )
-{
-if( PlayerHasPassive( player, ePassives.PAS_STEALTH_MOVEMENT ) )
-TakePassive( player, ePassives.PAS_STEALTH_MOVEMENT )
-}
-
-void function TakeLowProfilePassiveForLoadoutChange( entity player, PilotLoadoutDef loadout )
-{
-TakeLowProfilePassive( player )
 }
 
 void function OnTitanBecomesPilot( entity player, entity titan )
