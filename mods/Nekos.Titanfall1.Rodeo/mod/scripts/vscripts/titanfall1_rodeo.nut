@@ -1,8 +1,7 @@
 global function titanfall1_rodeo_init
 
 
-void function titanfall1_rodeo_init() 
-{
+void function titanfall1_rodeo_init() {
 AddOnRodeoStartedCallback( PilotStartRodeoOnTitan )
 AddCallback_OnTitanBecomesPilot( OnTitanBecomesPilot )
 }
