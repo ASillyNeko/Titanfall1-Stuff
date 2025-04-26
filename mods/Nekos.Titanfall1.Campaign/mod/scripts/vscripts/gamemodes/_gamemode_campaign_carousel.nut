@@ -444,7 +444,7 @@ void function HandleScoreEvent( entity victim, entity attacker, var damageInfo )
 	//if ( !attacker.IsPlayer() && playerScore == 1 && RandomInt( 100 ) < 75 ) // Lets Do A 25% Chance For NPCs To Get Points If They Kill A Normal NPC
 	//return
 
-	if( !attacker.IsPlayer() && attackerhasplayersonteam == true && playerScore == 1 && RandomInt( 100 ) < 50 )
+	if( !attacker.IsPlayer() && attackerhasplayersonteam == true && playerScore == 1 && !IsValid( attacker.GetBossPlayer() ) && RandomInt( 100 ) < 50 )
 	return
 	
 	
