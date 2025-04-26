@@ -102,12 +102,14 @@ npc.EndSignal( "OnDestroy" )
 npc.EndSignal( "OnDeath" )
 int team = npc.GetTeam()
 string npcclass = npc.GetClassName()
+if( npcclass == "npc_spectre" )
+thread SpectreTeamCheck( npc )
 OnThreadEnd(
 	function() : ( team, npcclass )
 	{
-		if( team == TEAM_MILITIA )
+		if( team == TEAM_MILITIA && npcclass != "npc_spectre" )
 		file.militia_npc_count = file.militia_npc_count - 1
-		if( team == TEAM_IMC )
+		if( team == TEAM_IMC && npcclass != "npc_spectre" )
 		file.imc_npc_count = file.imc_npc_count - 1
 		if( team == TEAM_MILITIA && npcclass == "npc_spectre" )
 		file.militia_spectre_count = file.militia_spectre_count - 1
@@ -116,6 +118,24 @@ OnThreadEnd(
 	}
 )
 WaitForever()
+}
+
+void function SpectreTeamCheck( entity npc )
+{
+npc.EndSignal( "OnDestroy" )
+npc.EndSignal( "OnDeath" )
+int team = npc.GetTeam()
+OnThreadEnd(
+	function() : ( team )
+	{
+		if( team == TEAM_MILITIA )
+		file.militia_npc_count = file.militia_npc_count - 1
+		if( team == TEAM_IMC )
+		file.imc_npc_count = file.imc_npc_count - 1
+	}
+)
+while( team == npc.GetTeam() )
+WaitFrame()
 }
 
 void function SpawnNPCDroppod( int team, string npc )
