@@ -37,28 +37,21 @@ string map = GetMapName()
 PrecacheModel( MODEL_ATTRITION_BANK )
 PrecacheModel( $"models/vehicle/hornet/hornet_fighter.mdl" )
 ScoreEvent_SetupEarnMeterValuesForMixedModes()
+SetSpawnpointGamemodeOverride( ATTRITION )
 if( aitdm_levels.contains( map ) )
 {
-SetSpawnpointGamemodeOverride( "aitdm" )
 AddCallback_GameStateEnter( eGameState.Playing, Attrition )
 return
 }
 if( cp_levels.contains( map ) )
 {
-SetSpawnpointGamemodeOverride( "cp" )
 AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
 return
 }
 if( RandomInt( 100 ) < 50 )
-{
-SetSpawnpointGamemodeOverride( "aitdm" )
 AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
-}
 else
-{
-SetSpawnpointGamemodeOverride( "cp" )
 AddCallback_GameStateEnter( eGameState.Playing, Attrition )
-}
 }
 
 /*
@@ -771,6 +764,7 @@ Hardpoint Logic
 void function Hardpoint()
 {
 file.mode = "Hardpoint"
+AddCallback_NPCLeeched( OnSpectreLeechedHardpoint )
 thread Hardpoints()
 Intro()
 thread HardpointThink()
@@ -1070,4 +1064,9 @@ OnThreadEnd(
 	}
 )
 WaitForever()
+}
+
+void function OnSpectreLeechedHardpoint( entity spectre, entity player )
+{
+	spectre.SetOwner( player )
 }
