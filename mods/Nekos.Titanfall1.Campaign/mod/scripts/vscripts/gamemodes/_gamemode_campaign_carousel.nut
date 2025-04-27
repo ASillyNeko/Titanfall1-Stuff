@@ -6,19 +6,40 @@ int militia_npc_count = 0
 int imc_npc_count = 0
 int militia_spectre_count = 0
 int imc_spectre_count = 0
+array<entity> hardpoints
+table<entity,int> hardpointprogress
+table<entity,int> hardpointprogressteam
+string mode = ""
 }file
 
 array<string> aitdm_levels = [
 "mp_angel_city",
+"mp_colony02",
+"mp_relic02"
+]
+
+array<string> cp_levels = [
 ]
 
 void function GamemodeCampaign_Int()
 {
 string map = GetMapName()
+PrecacheModel( MODEL_ATTRITION_BANK )
 PrecacheModel( $"models/vehicle/hornet/hornet_fighter.mdl" )
 if( aitdm_levels.contains( map ) )
+{
 AddCallback_GameStateEnter( eGameState.Playing, Attrition )
-//thread Attrition()
+return
+}
+if( cp_levels.contains( map ) )
+{
+AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
+return
+}
+if( RandomInt( 100 ) < 50 )
+AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
+else
+AddCallback_GameStateEnter( eGameState.Playing, Attrition )
 }
 
 /*
@@ -27,6 +48,7 @@ Attrition Logic
 
 void function Attrition()
 {
+file.mode = "Attrition"
 AddCallback_OnNPCKilled( HandleScoreEvent )
 AddCallback_OnPlayerKilled( HandleScoreEvent )
 Intro()
@@ -40,8 +62,8 @@ void function Intro()
  {
  thread IntroMilitiaAngelCity()
  IntroIMCAngelCity()
- }
  wait 2.5
+ }
 }
 
 void function Attrition_militia()
@@ -124,6 +146,7 @@ void function SpectreTeamCheck( entity npc )
 {
 npc.EndSignal( "OnDestroy" )
 npc.EndSignal( "OnDeath" )
+npc.EndSignal( "OnLeeched" )
 int team = npc.GetTeam()
 OnThreadEnd(
 	function() : ( team )
@@ -134,8 +157,7 @@ OnThreadEnd(
 		file.imc_npc_count = file.imc_npc_count - 1
 	}
 )
-while( team == npc.GetTeam() )
-WaitFrame()
+WaitForever()
 }
 
 void function SpawnNPCDroppod( int team, string npc )
@@ -161,6 +183,18 @@ void function SpawnNPCDroppod( int team, string npc )
 	file.militia_spectre_count = file.militia_spectre_count + 4
 	if( team == TEAM_IMC && npc == "npc_spectre" )
 	file.imc_spectre_count = file.imc_spectre_count + 4
+	entity hardpoint
+	int thing
+
+	foreach( entity hardpoints in file.hardpoints )
+	{
+	 thing = thing + 1
+	 if( thing == 3 || RandomInt( 100 ) < 50 )
+	 {
+	 hardpoint = hardpoints
+	 thing = 0
+	 }
+	}
 	
 	InitFireteamDropPod( pod )
 		
@@ -171,6 +205,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	{
 		entity entitynpc = CreateNPC( npc, team, pos, <0,0,0> )
 		DispatchSpawn( entitynpc )
+		entitynpc.SetEnemyChangeCallback( OnNPCEnemyChange )
 		if( npc == "npc_spectre" )
 		{
 		EnableLeeching( entitynpc )
@@ -180,8 +215,12 @@ void function SpawnNPCDroppod( int team, string npc )
 		SetSquad( entitynpc, squadName )
 		
 		SetUpNPCWeapons( entitynpc )
+		entitynpc.GiveWeapon( "mp_weapon_rocket_launcher" )
 		
 		entitynpc.SetParent( pod, "ATTACH", true )
+		if( file.mode == "Hardpoint" && IsValid( hardpoint ) )
+		thread AssaultHardpoints( entitynpc, hardpoint.GetOrigin() )
+		thread KillNPCOnBadNavMesh( entitynpc )
 		
 		npcs.append( entitynpc )
 	}
@@ -189,6 +228,125 @@ void function SpawnNPCDroppod( int team, string npc )
 	ActivateFireteamDropPod( pod, npcs )
 
 	thread SquadHandler( npcs )
+}
+
+void function AssaultHardpoints( entity npc, vector origin )
+{
+npc.EndSignal( "OnDeath" )
+npc.EndSignal( "OnDestroy" )
+npc.EndSignal( "OnLeeched" )
+npc.AssaultPointClamped( origin )
+ while( true )
+ {
+  if( Distance( npc.GetOrigin(), origin ) > 500 )
+  {
+  npc.AssaultSetGoalRadius( npc.GetMinGoalRadius() )
+  if( npc.GetClassName() != "npc_spectre" )
+  npc.AssaultSetGoalRadius( 160 )
+  npc.AssaultPoint( origin )
+  }
+  WaitFrame()
+ }
+}
+
+void function KillNPCOnBadNavMesh( entity npc )
+{
+	npc.EndSignal( "OnDeath" )
+	npc.EndSignal( "OnDestroy" )
+	
+	int FailCount = 0
+	vector lastnpcorigin = npc.GetOrigin()
+	while ( IsAlive( npc ) )
+	{
+		if ( Distance( npc.GetOrigin(), lastnpcorigin ) < 25 && !CanSeeEntity( npc, npc.GetEnemy() ) ) // Signals Don't Work For Some Reason NPCs Sometimes Stand Still In Combat This Can Cause This To Kill The NPC So Check If The Enemy Isn't Valid Or Alive
+		{
+			if ( FailCount == 25 )
+				npc.Die()
+			FailCount++
+		}
+		else
+			FailCount = 0
+			
+		lastnpcorigin = npc.GetOrigin()
+		wait 0.5
+	}
+}
+
+bool function CanSeeEntity( entity npc, entity enemy )
+{
+if( !IsValid( enemy ) )
+return false
+if( !IsAlive( enemy ) )
+return false
+return npc.CanSee( enemy )
+}
+
+void function OnNPCEnemyChange( entity guy )
+{
+	if ( !IsAlive( guy ) )
+		return
+
+	if ( guy.IsFrozen() )
+		return
+
+	entity enemy = guy.GetEnemy()
+	if ( !IsAlive( enemy ) )
+		return
+
+	array<entity> weapons = guy.GetMainWeapons()
+	if ( weapons.len() < 2 )
+		return
+
+	entity activeWeapon = guy.GetActiveWeapon()
+	if ( !IsValid( activeWeapon ) )
+		return
+
+	string activeWeaponName = activeWeapon.GetWeaponClassName()
+	bool antiTitanActive = activeWeapon != weapons[0] && !activeWeapon.GetWeaponSettingBool( eWeaponVar.titanarmor_critical_hit_required )
+
+	bool isHeavyArmorTarget = enemy.GetArmorType() == ARMOR_TYPE_HEAVY
+
+	string weaponToChange = ""
+	if ( isHeavyArmorTarget )
+	{
+		if ( antiTitanActive )
+			return
+
+		foreach ( entity weapon in weapons )
+		{
+			string className = weapon.GetWeaponClassName()
+			if ( activeWeaponName == className )
+				continue
+			bool isMainWeapon = weapon == weapons[0]
+			bool isAntiTitan = !weapon.GetWeaponSettingBool( eWeaponVar.titanarmor_critical_hit_required )
+			if ( isAntiTitan && !isMainWeapon )
+			{
+				weaponToChange = className
+				break
+			}
+		}
+	}
+	else if ( antiTitanActive )
+	{
+		foreach ( entity weapon in weapons )
+		{
+			string className = weapon.GetWeaponClassName()
+			if ( activeWeaponName == className )
+				continue
+			bool isMainWeapon = weapon == weapons[0]
+			bool isAntiTitan = !weapon.GetWeaponSettingBool( eWeaponVar.titanarmor_critical_hit_required )
+			if ( isMainWeapon || !isAntiTitan )
+			{
+				weaponToChange = className
+				break
+			}
+		}
+	}
+ 
+	if ( weaponToChange == "" )
+		return
+
+		guy.SetActiveWeaponByName( weaponToChange )
 }
 
 int function GetSpawnPointIndex( array< entity > points, int team )
@@ -484,13 +642,12 @@ void function HandleScoreEvent( entity victim, entity attacker, var damageInfo )
 	// Add score + update network int to trigger the "Score +n" popup
 	AddTeamScore( attacker.GetTeam(), teamScore )
 	if( attacker.IsPlayer() )
-	attacker.AddToPlayerGameStat( PGS_ASSAULT_SCORE, playerScore )
-	//attacker.SetPlayerNetInt("AT_bonusPoints", attacker.GetPlayerGameStat( PGS_ASSAULT_SCORE ) )
+	attacker.AddToPlayerGameStat( PGS_SCORE, playerScore )
+	//attacker.SetPlayerNetInt("AT_bonusPoints", attacker.GetPlayerGameStat( PGS_SCORE ) )
 }
 
 void function IntroMilitiaAngelCity()
 {
-	//entity titan = CreateNPC( "npc_titan", TEAM_MILITIA, < -2656.28, 4325.78, 125.575 >, < 0, -16.22, 0 > )
 	entity titan = CreateNPCTitan( "titan_atlas_tracker", TEAM_MILITIA, < -2656.28, 4325.78, 125.575 >, < 0, -16.22, 0 > )
 	entity npc = CreateNPC( "npc_soldier", TEAM_MILITIA, < 0, 0, 0 >, < 0, 0, 0 > )
 	DispatchSpawn( titan )
@@ -524,13 +681,11 @@ void function IntroMilitiaAngelCity()
 	waitthread PlayAnim( titan, "at_angelcity_MILITIA_intro" )
 	titan.ClearInvulnerable()
 	EnableTitanRodeo( titan )
-	//titan.AssaultPoint( < -3233.1, 1472.36, 120.031 > )
 	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
 }
 
 void function IntroIMCAngelCity()
 {
-	//entity titan = CreateNPC( "npc_titan", TEAM_IMC, < 1888, -1384, 128 >, < 0, 0, 0 > )
 	entity titan = CreateNPCTitan( "titan_atlas_vanguard", TEAM_IMC, < 1888, -1384, 128 >, < 0, 0, 0 > )
 	DispatchSpawn( titan )
 	entity hornet = CreatePropDynamic( $"models/vehicle/hornet/hornet_fighter.mdl", < 1888, -1384, 128 >, < 0, 0, 0 > )
@@ -550,14 +705,11 @@ void function IntroIMCAngelCity()
 	DisableTitanRodeo( titan ) // No Free Batteries
 	thread InfiniteTitanAmmo( titan )
 	thread PlayAnim( hornet, "ht_angelcity_IMC_ground_intro" )
-	//thread PlayAnim( missile1, "rk_angelcity_IMC_ground_intro_A" )
-	//thread PlayAnim( missile2, "rk_angelcity_IMC_ground_intro_B" )
 	waitthread PlayAnim( titan, "at_angelcity_IMC_ground_intro" )
 	titan.ClearInvulnerable()
 	EnableTitanRodeo( titan )
 	if( IsValid( hornet ) )
 	hornet.Destroy()
-	//titan.AssaultPoint( < 1062.5, 460.776, 120.031 > )
 	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
 }
 
@@ -604,4 +756,226 @@ void function KillNPC( entity npc )
 wait 13.5
 if( IsValid( npc ) )
 npc.Destroy()
+}
+
+/*
+Hardpoint Logic
+*/
+
+void function Hardpoint()
+{
+file.mode = "Hardpoint"
+thread Hardpoints()
+Intro()
+thread HardpointThink()
+thread HardpointPointsThink()
+thread Attrition_militia()
+thread Attrition_imc()
+}
+
+void function Hardpoints()
+{
+	foreach ( entity spawnpoint in GetEntArrayByClass_Expensive( "info_hardpoint" ) )
+	{
+		if( spawnpoint.GetModelName() != $"models/robots/mobile_hardpoint/mobile_hardpoint.mdl" ) //GameModeRemove Doesn't Work Because This A Custom Gamemode
+		    continue
+
+		// spawnpoints are CHardPoint entities
+		// init the hardpoint ent
+		int hardpointID = 0
+		string group = GetHardpointGroup(spawnpoint)
+			if ( group == "B" )
+				hardpointID = 1
+			else if ( group == "C" )
+				hardpointID = 2
+
+		spawnpoint.SetHardpointID( hardpointID )
+
+		entity hardpoint = CreatePropDynamic( MODEL_ATTRITION_BANK, spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
+		thread PlayAnim( hardpoint, "mh_inactive_idle" )
+		hardpoint.SetTitle( group )
+
+		entity trigger = CreateEntity( "prop_script" )
+		DispatchSpawn( trigger )
+		trigger.SetParent( hardpoint, "ORIGIN" )
+		thread SpawnHardpointMinimapIcon( trigger, spawnpoint.GetHardpointID() + 1, hardpoint )
+		entity enemytrigger = CreateEntity( "prop_script" )
+		DispatchSpawn( enemytrigger )
+		enemytrigger.SetParent( hardpoint, "ORIGIN" )
+		thread SpawnHardpointMinimapIcon( enemytrigger, spawnpoint.GetHardpointID() + 1, hardpoint, true )
+
+		file.hardpoints.append( hardpoint )
+	}
+}
+
+string function GetHardpointGroup(entity hardpoint) //Hardpoint Entity B on Homestead is missing the Hardpoint Group KeyValue
+{
+	if((GetMapName()=="mp_homestead")&&(!hardpoint.HasKey("hardpointGroup")))
+		return "B"
+
+	return string(hardpoint.kv.hardpointGroup)
+}
+
+void function SpawnHardpointMinimapIcon( entity spawnpoint, int miniMapObjectHardpoint, entity hardpoint, bool usedasenemymapicon = false )
+{
+spawnpoint.EndSignal( "OnDestroy" )
+spawnpoint.EndSignal( "OnDeath" )
+ while( true )
+ {
+	// map hardpoint id to eMinimapObject_info_hardpoint enum id
+	//int miniMapObjectHardpoint = spawnpoint.GetHardpointID() + 1
+
+	spawnpoint.Minimap_SetCustomState( miniMapObjectHardpoint )
+	if( usedasenemymapicon == false || hardpoint.GetTeam() != TEAM_MILITIA )
+	spawnpoint.Minimap_AlwaysShow( TEAM_MILITIA, null )
+	if( usedasenemymapicon == false || hardpoint.GetTeam() != TEAM_IMC )
+	spawnpoint.Minimap_AlwaysShow( TEAM_IMC, null )
+	if( usedasenemymapicon == true )
+	{
+	if( hardpoint.GetTeam != TEAM_IMC )
+	spawnpoint.Minimap_Hide( TEAM_IMC, null )
+	if( hardpoint.GetTeam != TEAM_MILITIA )
+	spawnpoint.Minimap_Hide( TEAM_MILITIA, null )
+	}
+	if( usedasenemymapicon == false )
+	{
+	if( hardpoint.GetTeam == TEAM_IMC )
+	spawnpoint.Minimap_Hide( TEAM_IMC, null )
+	if( hardpoint.GetTeam == TEAM_MILITIA )
+	spawnpoint.Minimap_Hide( TEAM_MILITIA, null )
+	}
+	spawnpoint.Minimap_SetAlignUpright( true )
+
+	if( usedasenemymapicon == false )
+	SetTeam( spawnpoint, hardpoint.GetTeam() )
+	if( usedasenemymapicon == true && (hardpoint.GetTeam() == TEAM_MILITIA || hardpoint.GetTeam() == TEAM_IMC) )
+	SetTeam( spawnpoint, GetOtherTeam( hardpoint.GetTeam() ) )
+	WaitFrame()
+ }
+}
+
+void function HardpointThink()
+{
+ while( true )
+ {
+  if( GetGameState() != eGameState.Playing )
+  return
+  foreach( entity hardpoint in file.hardpoints )
+  {
+   if( IsValid( hardpoint ) )
+   {
+    int closeplayermilitia = 0
+	int closeplayerimc = 0
+	int closenpcmilitia = 0
+	int closenpcimc = 0
+    foreach( entity playerarray in GetPlayerArray() )
+    {
+	 if( IsValid( playerarray ) )
+	 {
+	  if( IsAlive( playerarray ) )
+	  {
+       int playersteam = playerarray.GetTeam()
+       if( Distance( playerarray.GetOrigin(), hardpoint.GetOrigin() ) < 500 )
+	   {
+	    int pointstoadd = 1
+	    if( playerarray.IsTitan() )
+	    pointstoadd = 2
+	    if( playersteam == TEAM_MILITIA )
+	    closeplayermilitia = closeplayermilitia + pointstoadd
+	    if( playersteam == TEAM_IMC )
+	    closeplayerimc = closeplayerimc + pointstoadd
+	   }
+	  }
+	 }
+	}
+	foreach( entity npcarray in GetNPCArray() )
+    {
+	 if( IsValid( npcarray ) )
+	 {
+	  if( IsAlive( npcarray ) )
+	  {
+       int npcsteam = npcarray.GetTeam()
+       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) < 500 )
+	   {
+	    if( npcsteam == TEAM_MILITIA )
+	    closenpcmilitia = closenpcmilitia + 1
+		if( npcsteam == TEAM_IMC )
+		closenpcimc = closenpcimc + 1
+	    if( closenpcmilitia == 2 && npcsteam == TEAM_MILITIA )
+		{
+		closenpcmilitia = 0
+	    closeplayermilitia = closeplayermilitia + 1
+		}
+	    if( closenpcimc == 2 && npcsteam == TEAM_IMC )
+		{
+		closenpcimc = 0
+	    closeplayerimc = closeplayerimc + 1
+		}
+	   }
+	  }
+	 }
+    }
+	int pointstoaddtoprogress = 0
+	int teamprogresstoremove = 0
+	int teamtoprogressto = 0
+    if( closeplayerimc - closeplayermilitia > 0 )
+	{
+    teamtoprogressto = TEAM_IMC
+	pointstoaddtoprogress = closeplayerimc - closeplayermilitia
+	}
+    if( closeplayermilitia - closeplayerimc > 0 )
+	{
+    teamtoprogressto = TEAM_MILITIA
+	pointstoaddtoprogress = closeplayermilitia - closeplayerimc
+	}
+	if( hardpoint in file.hardpointprogressteam )
+	{
+	if( file.hardpointprogressteam[hardpoint] != 0 )
+	teamprogresstoremove = GetOtherTeam( file.hardpointprogressteam[hardpoint] )
+	}
+    int hardpointprogress = 0
+    if( hardpoint in file.hardpointprogress )
+    hardpointprogress = file.hardpointprogress[hardpoint]
+    if( hardpointprogress <= 0 )
+    file.hardpointprogressteam[hardpoint] <- teamtoprogressto
+	if( hardpointprogress <= 0 && hardpoint.GetTeam() != 0 )
+	SetTeam( hardpoint, 0 )
+	if( teamprogresstoremove != teamtoprogressto )
+	hardpointprogress = hardpointprogress + pointstoaddtoprogress
+	if( teamprogresstoremove == teamtoprogressto )
+	file.hardpointprogress[hardpoint] <- hardpointprogress - pointstoaddtoprogress
+    if( hardpointprogress > 100 )
+    hardpointprogress = 100
+	if( hardpointprogress < 0 )
+	hardpointprogress = 0
+    if( hardpointprogress != 100 && teamtoprogressto != 0 && teamtoprogressto != teamprogresstoremove )
+    file.hardpointprogress[hardpoint] <- hardpointprogress
+    if( hardpointprogress == 100 && teamtoprogressto != 0 && teamprogresstoremove != teamtoprogressto )
+    SetTeam( hardpoint, teamtoprogressto )
+    //print( hardpointprogress )
+   }
+  }
+  WaitFrame()
+ }
+}
+
+void function HardpointPointsThink()
+{
+ while( true )
+ {
+  if( GetGameState() != eGameState.Playing )
+  return
+  foreach( entity hardpoint in file.hardpoints )
+  {
+   int hardpointteam = hardpoint.GetTeam()
+   if( hardpointteam == TEAM_MILITIA || hardpointteam == TEAM_IMC )
+   {
+   int teamScore = 1
+   if ( GameRules_GetTeamScore(hardpointteam) + teamScore > GetScoreLimit_FromPlaylist() )
+   teamScore = GetScoreLimit_FromPlaylist() - GameRules_GetTeamScore(hardpointteam)
+   AddTeamScore( hardpointteam, teamScore )
+   }
+  }
+  wait 1.5
+ }
 }
