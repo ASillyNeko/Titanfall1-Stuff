@@ -10,6 +10,9 @@ array<entity> hardpoints
 entity hardpointA
 entity hardpointB
 entity hardpointC
+table<int,int> hardpointAnpccount
+table<int,int> hardpointBnpccount
+table<int,int> hardpointCnpccount
 table<entity,int> hardpointprogress
 table<entity,int> hardpointprogressteam
 table<int,string> nexthardpointtarget
@@ -200,6 +203,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	string nexthardpointtarget = "A"
 	if( team in file.nexthardpointtarget )
 	nexthardpointtarget = file.nexthardpointtarget[team]
+	nexthardpointtarget = GetLowestNPCCountHardpoint( team, nexthardpointtarget )
 	if( nexthardpointtarget == "A" )
 	file.nexthardpointtarget[team] <- "B"
 	if( nexthardpointtarget == "B" )
@@ -208,11 +212,29 @@ void function SpawnNPCDroppod( int team, string npc )
 	file.nexthardpointtarget[team] <- "A"
 
 	if( nexthardpointtarget == "A" )
+	{
 	hardpoint = file.hardpointA
+	if( team in file.hardpointAnpccount )
+	file.hardpointAnpccount[team] <- file.hardpointAnpccount[team] + 4
+	if( !(team in file.hardpointAnpccount) )
+	file.hardpointAnpccount[team] <- 4
+	}
 	if( nexthardpointtarget == "B" )
+	{
 	hardpoint = file.hardpointB
+	if( team in file.hardpointBnpccount )
+	file.hardpointBnpccount[team] <- file.hardpointBnpccount[team] + 4
+	if( !(team in file.hardpointAnpccount) )
+	file.hardpointBnpccount[team] <- 4
+	}
 	if( nexthardpointtarget == "C" )
+	{
 	hardpoint = file.hardpointC
+	if( team in file.hardpointCnpccount )
+	file.hardpointCnpccount[team] <- file.hardpointCnpccount[team] + 4
+	if( !(team in file.hardpointAnpccount) )
+	file.hardpointCnpccount[team] <- 4
+	}
 	
 	InitFireteamDropPod( pod )
 		
@@ -237,7 +259,10 @@ void function SpawnNPCDroppod( int team, string npc )
 		
 		entitynpc.SetParent( pod, "ATTACH", true )
 		if( file.mode == "Hardpoint" && IsValid( hardpoint ) )
+		{
 		thread AssaultHardpoints( entitynpc, hardpoint.GetOrigin() )
+		thread ChangeHardpointNPCCount( entitynpc, nexthardpointtarget )
+		}
 		
 		npcs.append( entitynpc )
 	}
@@ -985,4 +1010,58 @@ void function HardpointPointsThink()
   }
   wait 1.5
  }
+}
+
+string function GetLowestNPCCountHardpoint( int team, string nexthardpointtarget )
+{
+int hardpointAnpccount = 0
+int hardpointBnpccount = 0
+int hardpointCnpccount = 0
+if( team in file.hardpointAnpccount )
+hardpointAnpccount = file.hardpointAnpccount[team]
+if( team in file.hardpointBnpccount )
+hardpointBnpccount = file.hardpointBnpccount[team]
+if( team in file.hardpointCnpccount )
+hardpointCnpccount = file.hardpointCnpccount[team]
+int hardpointtoint = 0
+int hardpointtointagain = 0
+int hardpointlowestnpccount = 69
+array<int> hardpoints
+hardpoints.extend([hardpointAnpccount,hardpointBnpccount,hardpointCnpccount])
+foreach( int hardpoint in hardpoints )
+{
+ hardpointtoint = hardpointtoint + 1
+ if( hardpoint <= hardpointlowestnpccount )
+ {
+ hardpointlowestnpccount = hardpoint
+ hardpointtointagain = hardpointtoint
+ }
+}
+if( hardpointtointagain == 1 )
+return "A"
+if( hardpointtointagain == 2 )
+return "B"
+if( hardpointtointagain == 3 )
+return "C"
+return nexthardpointtarget
+}
+
+void function ChangeHardpointNPCCount( entity npc, string nexthardpointtarget )
+{
+npc.EndSignal( "OnDestroy" )
+npc.EndSignal( "OnDeath" )
+npc.EndSignal( "OnLeeched" )
+int team = npc.GetTeam()
+OnThreadEnd(
+	function() : ( team, nexthardpointtarget )
+	{
+		if( nexthardpointtarget == "A" && team in file.hardpointAnpccount )
+	    file.hardpointAnpccount[team] <- file.hardpointAnpccount[team] - 1
+		if( nexthardpointtarget == "B" && team in file.hardpointBnpccount )
+	    file.hardpointBnpccount[team] <- file.hardpointBnpccount[team] - 1
+		if( nexthardpointtarget == "C" && team in file.hardpointCnpccount )
+	    file.hardpointCnpccount[team] <- file.hardpointCnpccount[team] - 1
+	}
+)
+WaitForever()
 }
