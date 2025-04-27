@@ -36,6 +36,7 @@ void function GamemodeCampaign_Int()
 string map = GetMapName()
 PrecacheModel( MODEL_ATTRITION_BANK )
 PrecacheModel( $"models/vehicle/hornet/hornet_fighter.mdl" )
+ScoreEvent_SetupEarnMeterValuesForMixedModes()
 if( aitdm_levels.contains( map ) )
 {
 SetSpawnpointGamemodeOverride( "aitdm" )
@@ -69,6 +70,7 @@ void function Attrition()
 file.mode = "Attrition"
 AddCallback_OnNPCKilled( HandleScoreEvent )
 AddCallback_OnPlayerKilled( HandleScoreEvent )
+AddCallback_NPCLeeched( OnSpectreLeeched )
 Intro()
 thread Attrition_militia()
 thread Attrition_imc()
@@ -641,7 +643,13 @@ void function HandleScoreEvent( entity victim, entity attacker, var damageInfo )
 	AddTeamScore( attacker.GetTeam(), teamScore )
 	if( attacker.IsPlayer() )
 	attacker.AddToPlayerGameStat( PGS_SCORE, playerScore )
-	//attacker.SetPlayerNetInt("AT_bonusPoints", attacker.GetPlayerGameStat( PGS_SCORE ) )
+}
+
+void function OnSpectreLeeched( entity spectre, entity player )
+{
+	spectre.SetOwner( player )
+	AddTeamScore( player.GetTeam(), 1 )
+	player.AddToPlayerGameStat( PGS_SCORE, 1 )
 }
 
 void function IntroMilitiaAngelCity()
