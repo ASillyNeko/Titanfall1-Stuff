@@ -17,7 +17,7 @@ playlists
                 max_players 12
                 max_teams 2
                 titan_shield_regen 1
-                scorelimit 300
+                scorelimit 500
                 timelimit 12
                 infinite_doomed_state 0
 
@@ -42,7 +42,7 @@ playlists
                 max_players 12
                 max_teams 2
                 titan_shield_regen 1
-                scorelimit 300
+                scorelimit 500
                 timelimit 12
                 infinite_doomed_state 0
 
