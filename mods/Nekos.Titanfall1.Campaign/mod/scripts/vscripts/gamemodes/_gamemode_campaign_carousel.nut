@@ -33,18 +33,26 @@ PrecacheModel( MODEL_ATTRITION_BANK )
 PrecacheModel( $"models/vehicle/hornet/hornet_fighter.mdl" )
 if( aitdm_levels.contains( map ) )
 {
+SetSpawnpointGamemodeOverride( "aitdm" )
 AddCallback_GameStateEnter( eGameState.Playing, Attrition )
 return
 }
 if( cp_levels.contains( map ) )
 {
+SetSpawnpointGamemodeOverride( "cp" )
 AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
 return
 }
 if( RandomInt( 100 ) < 50 )
+{
+SetSpawnpointGamemodeOverride( "aitdm" )
 AddCallback_GameStateEnter( eGameState.Playing, Hardpoint )
+}
 else
+{
+SetSpawnpointGamemodeOverride( "cp" )
 AddCallback_GameStateEnter( eGameState.Playing, Attrition )
+}
 }
 
 /*
@@ -764,8 +772,11 @@ void function Hardpoints()
 {
 	foreach ( entity spawnpoint in GetEntArrayByClass_Expensive( "info_hardpoint" ) )
 	{
-		if ( spawnpoint.HasKey( "gamemode_" ) && (spawnpoint.kv["gamemode_"] == "0" || spawnpoint.kv["gamemode_"] == "") )
+		if ( spawnpoint.HasKey( "gamemode_cp" ) && (spawnpoint.kv["gamemode_cp"] == "0" || spawnpoint.kv["gamemode_cp"] == "") )
+		{
+		    spawnpoint.Destroy()
 		    continue
+		}
 
 		// spawnpoints are CHardPoint entities
 		// init the hardpoint ent
