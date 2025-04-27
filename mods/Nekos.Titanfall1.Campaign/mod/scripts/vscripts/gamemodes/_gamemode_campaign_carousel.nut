@@ -19,10 +19,11 @@ string mode = ""
 array<string> aitdm_levels = [
 "mp_angel_city",
 "mp_colony02",
-"mp_relic02"
+"mp_relic02",
 ]
 
 array<string> cp_levels = [
+"mp_black_water_canal",
 ]
 
 void function GamemodeCampaign_Int()
@@ -78,7 +79,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.militia_npc_count <= 12 )
+  if( file.militia_npc_count <= 16 )
   {
   wait 1
   didwait = true
@@ -104,7 +105,7 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.imc_npc_count <= 12 )
+  if( file.imc_npc_count <= 16 )
   {
   wait 1
   didwait = true
@@ -229,7 +230,6 @@ void function SpawnNPCDroppod( int team, string npc )
 		entitynpc.SetParent( pod, "ATTACH", true )
 		if( file.mode == "Hardpoint" && IsValid( hardpoint ) )
 		thread AssaultHardpoints( entitynpc, hardpoint.GetOrigin() )
-		thread KillNPCOnBadNavMesh( entitynpc )
 		
 		npcs.append( entitynpc )
 	}
@@ -249,6 +249,7 @@ npc.AssaultPointClamped( origin )
  {
   if( Distance( npc.GetOrigin(), origin ) > 500 )
   {
+  if( npc.GetClassName() == "npc_spectre" )
   npc.AssaultSetGoalRadius( npc.GetMinGoalRadius() )
   if( npc.GetClassName() != "npc_spectre" )
   npc.AssaultSetGoalRadius( 160 )
@@ -256,29 +257,6 @@ npc.AssaultPointClamped( origin )
   }
   WaitFrame()
  }
-}
-
-void function KillNPCOnBadNavMesh( entity npc )
-{
-	npc.EndSignal( "OnDeath" )
-	npc.EndSignal( "OnDestroy" )
-	
-	int FailCount = 0
-	vector lastnpcorigin = npc.GetOrigin()
-	while ( IsAlive( npc ) )
-	{
-		if ( Distance( npc.GetOrigin(), lastnpcorigin ) < 25 && !CanSeeEntity( npc, npc.GetEnemy() ) ) // Signals Don't Work For Some Reason NPCs Sometimes Stand Still In Combat This Can Cause This To Kill The NPC So Check If The Enemy Isn't Valid Or Alive
-		{
-			if ( FailCount == 25 )
-				npc.Die()
-			FailCount++
-		}
-		else
-			FailCount = 0
-			
-		lastnpcorigin = npc.GetOrigin()
-		wait 0.5
-	}
 }
 
 bool function CanSeeEntity( entity npc, entity enemy )
@@ -786,7 +764,7 @@ void function Hardpoints()
 {
 	foreach ( entity spawnpoint in GetEntArrayByClass_Expensive( "info_hardpoint" ) )
 	{
-		if( spawnpoint.GetModelName() != $"models/robots/mobile_hardpoint/mobile_hardpoint.mdl" ) //GameModeRemove Doesn't Work Because This A Custom Gamemode
+		if ( spawnpoint.HasKey( "gamemode_" ) && (spawnpoint.kv["gamemode_"] == "0" || spawnpoint.kv["gamemode_"] == "") )
 		    continue
 
 		// spawnpoints are CHardPoint entities
@@ -882,6 +860,9 @@ void function HardpointThink()
 	int closeplayerimc = 0
 	int closenpcmilitia = 0
 	int closenpcimc = 0
+	string message = "Hardpoint at "
+	if( hardpoint in file.hardpointprogress )
+	message = message + file.hardpointprogress[hardpoint] + "%"
     foreach( entity playerarray in GetPlayerArray() )
     {
 	 if( IsValid( playerarray ) )
@@ -889,7 +870,7 @@ void function HardpointThink()
 	  if( IsAlive( playerarray ) )
 	  {
        int playersteam = playerarray.GetTeam()
-       if( Distance( playerarray.GetOrigin(), hardpoint.GetOrigin() ) < 500 )
+       if( Distance( playerarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 )
 	   {
 	    int pointstoadd = 1
 	    if( playerarray.IsTitan() )
@@ -898,6 +879,7 @@ void function HardpointThink()
 	    closeplayermilitia = closeplayermilitia + pointstoadd
 	    if( playersteam == TEAM_IMC )
 	    closeplayerimc = closeplayerimc + pointstoadd
+		SendHudMessage( playerarray, message, -1, 0.4, 255, 255, 255, 255, 0.0, 0.5, 0.5 )
 	   }
 	  }
 	 }
@@ -909,7 +891,7 @@ void function HardpointThink()
 	  if( IsAlive( npcarray ) )
 	  {
        int npcsteam = npcarray.GetTeam()
-       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) < 500 )
+       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 )
 	   {
 	    if( npcsteam == TEAM_MILITIA )
 	    closenpcmilitia = closenpcmilitia + 1
