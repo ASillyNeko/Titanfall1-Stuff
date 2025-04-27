@@ -16,6 +16,8 @@ table<int,int> hardpointCnpccount
 table<entity,int> hardpointprogress
 table<entity,int> hardpointprogressteam
 table<int,string> nexthardpointtarget
+array<string> gruntweapons = [ "mp_weapon_rspn101", "mp_weapon_dmr", "mp_weapon_r97", "mp_weapon_lmg" ]
+array<string> spectreweapons = [ "mp_weapon_hemlok_smg", "mp_weapon_doubletake", "mp_weapon_mastiff" ]
 string mode = ""
 }file
 
@@ -255,6 +257,11 @@ void function SpawnNPCDroppod( int team, string npc )
 		SetSquad( entitynpc, squadName )
 		
 		SetUpNPCWeapons( entitynpc )
+		TakeWeaponsForArray( entitynpc, entitynpc.GetMainWeapons() )
+		if( npc == "npc_spectre" )
+		entitynpc.GiveWeapon( file.spectreweapons.getrandom() )
+		if( npc != "npc_spectre" )
+		entitynpc.GiveWeapon( file.gruntweapons.getrandom() )
 		entitynpc.GiveWeapon( "mp_weapon_rocket_launcher" )
 		
 		entitynpc.SetParent( pod, "ATTACH", true )
@@ -270,35 +277,6 @@ void function SpawnNPCDroppod( int team, string npc )
 	ActivateFireteamDropPod( pod, npcs )
 
 	thread SquadHandler( npcs )
-}
-
-void function AssaultHardpoints( entity npc, vector origin )
-{
-npc.EndSignal( "OnDeath" )
-npc.EndSignal( "OnDestroy" )
-npc.EndSignal( "OnLeeched" )
-npc.AssaultPointClamped( origin )
- while( true )
- {
-  if( Distance( npc.GetOrigin(), origin ) > 500 )
-  {
-  if( npc.GetClassName() == "npc_spectre" )
-  npc.AssaultSetGoalRadius( npc.GetMinGoalRadius() )
-  if( npc.GetClassName() != "npc_spectre" )
-  npc.AssaultSetGoalRadius( 160 )
-  npc.AssaultPoint( origin )
-  }
-  WaitFrame()
- }
-}
-
-bool function CanSeeEntity( entity npc, entity enemy )
-{
-if( !IsValid( enemy ) )
-return false
-if( !IsAlive( enemy ) )
-return false
-return npc.CanSee( enemy )
 }
 
 void function OnNPCEnemyChange( entity guy )
@@ -1009,6 +987,26 @@ void function HardpointPointsThink()
    }
   }
   wait 1.5
+ }
+}
+
+void function AssaultHardpoints( entity npc, vector origin )
+{
+npc.EndSignal( "OnDeath" )
+npc.EndSignal( "OnDestroy" )
+npc.EndSignal( "OnLeeched" )
+npc.AssaultPointClamped( origin )
+ while( true )
+ {
+  if( Distance( npc.GetOrigin(), origin ) > 300 )
+  {
+  if( npc.GetClassName() == "npc_spectre" )
+  npc.AssaultSetGoalRadius( npc.GetMinGoalRadius() )
+  if( npc.GetClassName() != "npc_spectre" )
+  npc.AssaultSetGoalRadius( 160 )
+  npc.AssaultPoint( origin )
+  }
+  WaitFrame()
  }
 }
 
