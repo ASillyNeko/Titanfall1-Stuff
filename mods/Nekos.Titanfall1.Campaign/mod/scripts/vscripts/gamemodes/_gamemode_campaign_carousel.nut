@@ -7,8 +7,12 @@ int imc_npc_count = 0
 int militia_spectre_count = 0
 int imc_spectre_count = 0
 array<entity> hardpoints
+entity hardpointA
+entity hardpointB
+entity hardpointC
 table<entity,int> hardpointprogress
 table<entity,int> hardpointprogressteam
+table<int,string> nexthardpointtarget
 string mode = ""
 }file
 
@@ -184,17 +188,22 @@ void function SpawnNPCDroppod( int team, string npc )
 	if( team == TEAM_IMC && npc == "npc_spectre" )
 	file.imc_spectre_count = file.imc_spectre_count + 4
 	entity hardpoint
-	int thing
+	string nexthardpointtarget = "A"
+	if( team in file.nexthardpointtarget )
+	nexthardpointtarget = file.nexthardpointtarget[team]
+	if( nexthardpointtarget == "A" )
+	file.nexthardpointtarget[team] <- "B"
+	if( nexthardpointtarget == "B" )
+	file.nexthardpointtarget[team] <- "C"
+	if( nexthardpointtarget == "C" )
+	file.nexthardpointtarget[team] <- "A"
 
-	foreach( entity hardpoints in file.hardpoints )
-	{
-	 thing = thing + 1
-	 if( thing == 3 || RandomInt( 100 ) < 50 )
-	 {
-	 hardpoint = hardpoints
-	 thing = 0
-	 }
-	}
+	if( nexthardpointtarget == "A" )
+	hardpoint = file.hardpointA
+	if( nexthardpointtarget == "B" )
+	hardpoint = file.hardpointB
+	if( nexthardpointtarget == "C" )
+	hardpoint = file.hardpointC
 	
 	InitFireteamDropPod( pod )
 		
@@ -793,7 +802,12 @@ void function Hardpoints()
 
 		entity hardpoint = CreatePropDynamic( MODEL_ATTRITION_BANK, spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
 		thread PlayAnim( hardpoint, "mh_inactive_idle" )
-		hardpoint.SetTitle( group )
+		if( group != "B" && group != "C" )
+		file.hardpointA = hardpoint
+		if( group == "B" )
+		file.hardpointB = hardpoint
+		if( group == "C" )
+		file.hardpointC = hardpoint
 
 		entity trigger = CreateEntity( "prop_script" )
 		DispatchSpawn( trigger )
