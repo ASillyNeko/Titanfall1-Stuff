@@ -166,7 +166,7 @@ WaitForever()
 void function SpawnNPCDroppod( int team, string npc )
 {
     array<entity> npcs
-	array<entity> droppodspawns = SpawnPoints_GetDropPod()
+	array<entity> droppodspawns = SpawnPoints_GetTitan() // Replaced With SpawnPoints_GetTitan() Because Droppod Spawns Suck
 	bool isvaliddroppodspawn = false
 	foreach( entity droppod in droppodspawns )
 	{
