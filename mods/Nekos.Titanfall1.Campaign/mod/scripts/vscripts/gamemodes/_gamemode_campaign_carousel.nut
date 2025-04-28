@@ -809,11 +809,9 @@ void function HardpointThink()
 	  if( IsAlive( playerarray ) )
 	  {
        int playersteam = playerarray.GetTeam()
-       if( Distance( playerarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 )
+       if( Distance( playerarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 && !playerarray.IsTitan() )
 	   {
 	    int pointstoadd = 1
-	    if( playerarray.IsTitan() )
-	    pointstoadd = 2
 	    if( playersteam == TEAM_MILITIA )
 	    closeplayermilitia = closeplayermilitia + pointstoadd
 	    if( playersteam == TEAM_IMC )
@@ -829,9 +827,9 @@ void function HardpointThink()
 	 {
 	  if( IsAlive( npcarray ) )
 	  {
-       int npcsteam = npcarray.GetTeam()
-       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 )
+       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 && !npcarray.IsTitan() )
 	   {
+	    int npcsteam = npcarray.GetTeam()
 	    if( npcsteam == TEAM_MILITIA )
 	    closenpcmilitia = closenpcmilitia + 1
 		if( npcsteam == TEAM_IMC )
