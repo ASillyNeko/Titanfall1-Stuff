@@ -69,16 +69,6 @@ thread Attrition_militia()
 thread Attrition_imc()
 }
 
-void function Intro()
-{
- if( GetMapName() == "mp_angel_city" )
- {
- thread IntroMilitiaAngelCity()
- IntroIMCAngelCity()
- wait 2.5
- }
-}
-
 void function Attrition_militia()
 {
 bool didwait = false
@@ -645,73 +635,6 @@ void function OnSpectreLeeched( entity spectre, entity player )
 	player.AddToPlayerGameStat( PGS_SCORE, 1 )
 }
 
-void function IntroMilitiaAngelCity()
-{
-	entity titan = CreateNPCTitan( "titan_atlas_tracker", TEAM_MILITIA, < -2656.28, 4325.78, 125.575 >, < 0, -16.22, 0 > )
-	entity npc = CreateNPC( "npc_soldier", TEAM_MILITIA, < 0, 0, 0 >, < 0, 0, 0 > )
-	DispatchSpawn( titan )
-	DispatchSpawn( npc )
-	#if TITANFALL1_MODEL
-	titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
-	thread OnTitanBodyGroupChange( titan )
-	#endif
-	#if !TITANFALL1_RANDOM_WEAPON
-	TakeWeaponsForArray( titan, titan.GetMainWeapons() )
-	titan.GiveWeapon( "mp_titanweapon_sticky_40mm" )
-	#endif
-	titan.SetTitle( "Militia Titan" )
-	titan.SetInvulnerable()
-	npc.SetInvulnerable()
-	entity soul = titan.GetTitanSoul()
-	if( IsValid( soul ) )
-	soul.SetShieldHealth( soul.GetShieldHealthMax() )
-	thread KillNPC( npc )
-	npc.SetParent( titan, "HAND_R" )
-	npc.EnableNPCFlag( NPC_IGNORE_ALL )
-	DisableTitanRodeo( titan ) // No Free Batteries
-	if( GetCurrentPlaylistVarInt( "classic_mp", 1 ) == 0 )
-	{
-	foreach( entity player in GetPlayerArray() )
-	{
-	if( player.GetTeam() == TEAM_MILITIA )
-	player.SetOrigin( < -2584.16, 4654.72, 120.031 > )
-	}
-	}
-	waitthread PlayAnim( titan, "at_angelcity_MILITIA_intro" )
-	titan.ClearInvulnerable()
-	EnableTitanRodeo( titan )
-	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
-}
-
-void function IntroIMCAngelCity()
-{
-	entity titan = CreateNPCTitan( "titan_atlas_vanguard", TEAM_IMC, < 1888, -1384, 128 >, < 0, 0, 0 > )
-	DispatchSpawn( titan )
-	entity hornet = CreatePropDynamic( $"models/vehicle/hornet/hornet_fighter.mdl", < 1888, -1384, 128 >, < 0, 0, 0 > )
-	#if TITANFALL1_MODEL
-	titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
-	thread OnTitanBodyGroupChange( titan )
-	#endif
-	#if !TITANFALL1_RANDOM_WEAPON
-	TakeWeaponsForArray( titan, titan.GetMainWeapons() )
-	titan.GiveWeapon( "mp_titanweapon_xo16_vanguard" )
-	#endif
-	titan.SetTitle( "IMC Titan" )
-	titan.SetInvulnerable()
-	entity soul = titan.GetTitanSoul()
-	if( IsValid( soul ) )
-	soul.SetShieldHealth( soul.GetShieldHealthMax() )
-	DisableTitanRodeo( titan ) // No Free Batteries
-	thread InfiniteTitanAmmo( titan )
-	thread PlayAnim( hornet, "ht_angelcity_IMC_ground_intro" )
-	waitthread PlayAnim( titan, "at_angelcity_IMC_ground_intro" )
-	titan.ClearInvulnerable()
-	EnableTitanRodeo( titan )
-	if( IsValid( hornet ) )
-	hornet.Destroy()
-	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
-}
-
 void function InfiniteTitanAmmo( entity titan )
 {
 titan.EndSignal( "OnDestroy" )
@@ -1069,4 +992,85 @@ WaitForever()
 void function OnSpectreLeechedHardpoint( entity spectre, entity player )
 {
 	spectre.SetOwner( player )
+}
+
+/*
+Intro
+*/
+
+void function Intro()
+{
+ if( GetMapName() == "mp_angel_city" )
+ {
+ thread IntroMilitiaAngelCity()
+ IntroIMCAngelCity()
+ wait 2.5
+ }
+}
+
+void function IntroMilitiaAngelCity()
+{
+	entity titan = CreateNPCTitan( "titan_atlas_tracker", TEAM_MILITIA, < -2656.28, 4325.78, 125.575 >, < 0, -16.22, 0 > )
+	entity npc = CreateNPC( "npc_soldier", TEAM_MILITIA, < 0, 0, 0 >, < 0, 0, 0 > )
+	DispatchSpawn( titan )
+	DispatchSpawn( npc )
+	#if TITANFALL1_MODEL
+	titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+	thread OnTitanBodyGroupChange( titan )
+	#endif
+	#if !TITANFALL1_RANDOM_WEAPON
+	TakeWeaponsForArray( titan, titan.GetMainWeapons() )
+	titan.GiveWeapon( "mp_titanweapon_sticky_40mm" )
+	#endif
+	titan.SetTitle( "Militia Titan" )
+	titan.SetInvulnerable()
+	npc.SetInvulnerable()
+	entity soul = titan.GetTitanSoul()
+	if( IsValid( soul ) )
+	soul.SetShieldHealth( soul.GetShieldHealthMax() )
+	thread KillNPC( npc )
+	npc.SetParent( titan, "HAND_R" )
+	npc.EnableNPCFlag( NPC_IGNORE_ALL )
+	DisableTitanRodeo( titan ) // No Free Batteries
+	if( GetCurrentPlaylistVarInt( "classic_mp", 1 ) == 0 )
+	{
+	foreach( entity player in GetPlayerArray() )
+	{
+	if( player.GetTeam() == TEAM_MILITIA )
+	player.SetOrigin( < -2584.16, 4654.72, 120.031 > )
+	}
+	}
+	waitthread PlayAnim( titan, "at_angelcity_MILITIA_intro" )
+	titan.ClearInvulnerable()
+	EnableTitanRodeo( titan )
+	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
+}
+
+void function IntroIMCAngelCity()
+{
+	entity titan = CreateNPCTitan( "titan_atlas_vanguard", TEAM_IMC, < 1888, -1384, 128 >, < 0, 0, 0 > )
+	DispatchSpawn( titan )
+	entity hornet = CreatePropDynamic( $"models/vehicle/hornet/hornet_fighter.mdl", < 1888, -1384, 128 >, < 0, 0, 0 > )
+	#if TITANFALL1_MODEL
+	titan.SetModel($"models/titans/atlas/atlas_titan.mdl")
+	thread OnTitanBodyGroupChange( titan )
+	#endif
+	#if !TITANFALL1_RANDOM_WEAPON
+	TakeWeaponsForArray( titan, titan.GetMainWeapons() )
+	titan.GiveWeapon( "mp_titanweapon_xo16_vanguard" )
+	#endif
+	titan.SetTitle( "IMC Titan" )
+	titan.SetInvulnerable()
+	entity soul = titan.GetTitanSoul()
+	if( IsValid( soul ) )
+	soul.SetShieldHealth( soul.GetShieldHealthMax() )
+	DisableTitanRodeo( titan ) // No Free Batteries
+	thread InfiniteTitanAmmo( titan )
+	thread PlayAnim( hornet, "ht_angelcity_IMC_ground_intro" )
+	waitthread PlayAnim( titan, "at_angelcity_IMC_ground_intro" )
+	titan.ClearInvulnerable()
+	EnableTitanRodeo( titan )
+	if( IsValid( hornet ) )
+	hornet.Destroy()
+	titan.AssaultPoint( < -902.682, 420.162, 120.031 > )
 }
