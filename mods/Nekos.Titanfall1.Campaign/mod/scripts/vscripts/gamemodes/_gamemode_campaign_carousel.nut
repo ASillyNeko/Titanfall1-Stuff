@@ -250,9 +250,14 @@ void function SpawnNPCDroppod( int team, string npc )
 		entitynpc.GiveWeapon( "mp_weapon_rocket_launcher" )
 		
 		entitynpc.SetParent( pod, "ATTACH", true )
+		entitynpc.Minimap_AlwaysShow( GetOtherTeam( team ), null )
 		if( file.mode == "Hardpoint" && IsValid( hardpoint ) )
 		{
-		thread AssaultHardpoints( entitynpc, hardpoint.GetOrigin() )
+		entitynpc.Signal( "StopHardpointBehavior" )
+	    int followBehavior = GetDefaultNPCFollowBehavior( entitynpc )
+	    entitynpc.InitFollowBehavior( hardpoint, followBehavior )
+	    entitynpc.EnableBehavior( "Follow" )
+		entitynpc.DisableBehavior( "Assault" )
 		thread ChangeHardpointNPCCount( entitynpc, nexthardpointtarget )
 		}
 		
@@ -261,7 +266,23 @@ void function SpawnNPCDroppod( int team, string npc )
 	
 	ActivateFireteamDropPod( pod, npcs )
 
+	if( file.mode != "Hardpoint" ) // This Moves The NPCs Away From The Hardpoint
 	thread SquadHandler( npcs )
+	if( GetMapName().find( "mp_lf_") != null ) // These Maps Spawn The NPC Outside The Map
+	{
+	foreach( entity entitynpc in npcs )
+	thread PutDroppodNPCInSafePos( entitynpc, pod )
+	}
+}
+
+void function PutDroppodNPCInSafePos( entity npc, entity npcpod )
+{
+npc.EndSignal( "OnDestroy" )
+npc.EndSignal( "OnDeath" )
+npcpod.EndSignal( "OnDestroy" )
+npcpod.EndSignal( "OnDeath" )
+WaittillAnimDone( npc )
+PutEntityInSafeSpot( npc, null, null, npcpod.GetOrigin(), npc.GetOrigin() )
 }
 
 void function OnNPCEnemyChange( entity guy )
@@ -719,12 +740,15 @@ void function Hardpoints()
 
 		entity hardpoint = CreatePropDynamic( MODEL_ATTRITION_BANK, spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
 		thread PlayAnim( hardpoint, "mh_inactive_idle" )
+		entity coolerhardpoint = CreateEntity( "prop_script" )
+		DispatchSpawn( coolerhardpoint )
+		coolerhardpoint.SetParent( hardpoint, "ORIGIN" )
 		if( group != "B" && group != "C" )
-		file.hardpointA = hardpoint
+		file.hardpointA = coolerhardpoint
 		if( group == "B" )
-		file.hardpointB = hardpoint
+		file.hardpointB = coolerhardpoint
 		if( group == "C" )
-		file.hardpointC = hardpoint
+		file.hardpointC = coolerhardpoint
 
 		entity trigger = CreateEntity( "prop_script" )
 		DispatchSpawn( trigger )
@@ -910,26 +934,6 @@ void function HardpointPointsThink()
    }
   }
   wait 1.5
- }
-}
-
-void function AssaultHardpoints( entity npc, vector origin )
-{
-npc.EndSignal( "OnDeath" )
-npc.EndSignal( "OnDestroy" )
-npc.EndSignal( "OnLeeched" )
-npc.AssaultPointClamped( origin )
- while( true )
- {
-  if( Distance( npc.GetOrigin(), origin ) > 300 )
-  {
-  if( npc.GetClassName() == "npc_spectre" )
-  npc.AssaultSetGoalRadius( npc.GetMinGoalRadius() )
-  if( npc.GetClassName() != "npc_spectre" )
-  npc.AssaultSetGoalRadius( 160 )
-  npc.AssaultPoint( origin )
-  }
-  WaitFrame()
  }
 }
 
