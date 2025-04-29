@@ -16,6 +16,11 @@ table<int,int> hardpointCnpccount
 table<entity,int> hardpointprogress
 table<entity,int> hardpointprogressteam
 table<int,string> nexthardpointtarget
+table<entity,entity> hardpointseatA
+table<entity,entity> hardpointseatB
+table<entity,entity> hardpointseatC
+table<entity,entity> hardpointseatD
+table<entity,bool> entityisusinghardpoint
 array<string> gruntweapons = [ "mp_weapon_rspn101", "mp_weapon_dmr", "mp_weapon_r97", "mp_weapon_lmg" ]
 array<string> spectreweapons = [ "mp_weapon_hemlok_smg", "mp_weapon_doubletake", "mp_weapon_mastiff" ]
 string mode = ""
@@ -34,7 +39,8 @@ array<string> cp_levels = [
 void function GamemodeCampaign_Int()
 {
 string map = GetMapName()
-PrecacheModel( MODEL_ATTRITION_BANK )
+//PrecacheModel( MODEL_ATTRITION_BANK )
+PrecacheModel( $"models/communication/terminal_com_station.mdl" )
 PrecacheModel( $"models/vehicle/hornet/hornet_fighter.mdl" )
 ScoreEvent_SetupEarnMeterValuesForMixedModes()
 SetSpawnpointGamemodeOverride( ATTRITION )
@@ -77,10 +83,14 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.militia_npc_count <= 16 )
+  if( file.militia_npc_count <= 12 )
   {
-  wait 1
+  wait RandomFloatRange( 5, 10 )
   didwait = true
+  if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 4 )
+  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_spectre" )
+  else
+  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
   }
   if( didwait == false )
   {
@@ -88,10 +98,6 @@ bool didwait = false
   thread Attrition_militia()
   return
   }
-  if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 4 )
-  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_spectre" )
-  else
-  thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
  }
 }
 
@@ -103,10 +109,14 @@ bool didwait = false
   didwait = false
   if( GetGameState() != eGameState.Playing )
   return
-  if( file.imc_npc_count <= 16 )
+  if( file.imc_npc_count <= 12 )
   {
-  wait 1
+  wait RandomFloatRange( 5, 10 )
   didwait = true
+  if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 4 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
+  thread SpawnNPCDroppod( TEAM_IMC, "npc_spectre" )
+  else
+  thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
   }
   if( didwait == false )
   {
@@ -114,10 +124,6 @@ bool didwait = false
   thread Attrition_imc()
   return
   }
-  if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 4 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
-  thread SpawnNPCDroppod( TEAM_IMC, "npc_spectre" )
-  else
-  thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
  }
 }
 
@@ -191,6 +197,8 @@ void function SpawnNPCDroppod( int team, string npc )
 	if( team in file.nexthardpointtarget )
 	nexthardpointtarget = file.nexthardpointtarget[team]
 	nexthardpointtarget = GetLowestNPCCountHardpoint( team, nexthardpointtarget )
+	if( npc == "npc_spectre" )
+	nexthardpointtarget = ""
 	if( nexthardpointtarget == "A" )
 	file.nexthardpointtarget[team] <- "B"
 	if( nexthardpointtarget == "B" )
@@ -251,7 +259,7 @@ void function SpawnNPCDroppod( int team, string npc )
 		
 		entitynpc.SetParent( pod, "ATTACH", true )
 		entitynpc.Minimap_AlwaysShow( GetOtherTeam( team ), null )
-		if( file.mode == "Hardpoint" && IsValid( hardpoint ) )
+		if( file.mode == "Hardpoint" && IsValid( hardpoint ) && npc != "npc_spectre" )
 		{
 		entitynpc.Signal( "StopHardpointBehavior" )
 	    int followBehavior = GetDefaultNPCFollowBehavior( entitynpc )
@@ -259,6 +267,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	    entitynpc.EnableBehavior( "Follow" )
 		entitynpc.DisableBehavior( "Assault" )
 		thread ChangeHardpointNPCCount( entitynpc, nexthardpointtarget )
+		thread NPCHardpointSeat( entitynpc )
 		}
 		
 		npcs.append( entitynpc )
@@ -266,7 +275,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	
 	ActivateFireteamDropPod( pod, npcs )
 
-	if( file.mode != "Hardpoint" ) // This Moves The NPCs Away From The Hardpoint
+	if( npc == "npc_spectre" ) // This Moves The NPCs Away From The Hardpoint
 	thread SquadHandler( npcs )
 	if( GetMapName().find( "mp_lf_") != null ) // These Maps Spawn The NPC Outside The Map
 	{
@@ -738,12 +747,17 @@ void function Hardpoints()
 
 		spawnpoint.SetHardpointID( hardpointID )
 
-		entity hardpoint = CreatePropDynamic( MODEL_ATTRITION_BANK, spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
-		thread PlayAnim( hardpoint, "mh_inactive_idle" )
+		//entity hardpoint = CreatePropDynamic( MODEL_ATTRITION_BANK, spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
+		//thread PlayAnim( hardpoint, "mh_inactive_idle" )
+		entity hardpoint = CreatePropDynamic( $"models/communication/terminal_com_station.mdl", spawnpoint.GetOrigin(), spawnpoint.GetAngles(), 6 )
+		file.hardpointseatA[hardpoint] <- hardpoint
+        file.hardpointseatB[hardpoint] <- hardpoint
+        file.hardpointseatC[hardpoint] <- hardpoint
+        file.hardpointseatD[hardpoint] <- hardpoint
 		entity coolerhardpoint = CreateEntity( "prop_script" )
 		DispatchSpawn( coolerhardpoint )
 		coolerhardpoint.SetParent( hardpoint, "ORIGIN" )
-		if( group != "B" && group != "C" )
+		if( group == "A" )
 		file.hardpointA = coolerhardpoint
 		if( group == "B" )
 		file.hardpointB = coolerhardpoint
@@ -845,33 +859,46 @@ void function HardpointThink()
 	  }
 	 }
 	}
-	foreach( entity npcarray in GetNPCArray() )
-    {
-	 if( IsValid( npcarray ) )
+	if( file.hardpointseatA[hardpoint] != hardpoint )
+	{
+	 if( IsValid( file.hardpointseatA[hardpoint] ) )
 	 {
-	  if( IsAlive( npcarray ) )
-	  {
-       if( Distance( npcarray.GetOrigin(), hardpoint.GetOrigin() ) <= 250 && !npcarray.IsTitan() )
-	   {
-	    int npcsteam = npcarray.GetTeam()
-	    if( npcsteam == TEAM_MILITIA )
-	    closenpcmilitia = closenpcmilitia + 1
-		if( npcsteam == TEAM_IMC )
-		closenpcimc = closenpcimc + 1
-	    if( closenpcmilitia == 2 && npcsteam == TEAM_MILITIA )
-		{
-		closenpcmilitia = 0
-	    closeplayermilitia = closeplayermilitia + 1
-		}
-	    if( closenpcimc == 2 && npcsteam == TEAM_IMC )
-		{
-		closenpcimc = 0
-	    closeplayerimc = closeplayerimc + 1
-		}
-	   }
-	  }
+	 if( file.hardpointseatA[hardpoint].GetTeam() == TEAM_MILITIA )
+	 closeplayermilitia = closeplayermilitia + 1
+	 else
+	 closeplayerimc = closeplayerimc + 1
 	 }
-    }
+	}
+	if( file.hardpointseatB[hardpoint] != hardpoint )
+	{
+	 if( IsValid( file.hardpointseatB[hardpoint] ) )
+	 {
+	 if( file.hardpointseatB[hardpoint].GetTeam() == TEAM_MILITIA )
+	 closeplayermilitia = closeplayermilitia + 1
+	 else
+	 closeplayerimc = closeplayerimc + 1
+	 }
+	}
+	if( file.hardpointseatC[hardpoint] != hardpoint )
+	{
+	 if( IsValid( file.hardpointseatC[hardpoint] ) )
+	 {
+	 if( file.hardpointseatC[hardpoint].GetTeam() == TEAM_MILITIA )
+	 closeplayermilitia = closeplayermilitia + 1
+	 else
+	 closeplayerimc = closeplayerimc + 1
+	 }
+	}
+	if( file.hardpointseatD[hardpoint] != hardpoint )
+	{
+	 if( IsValid( file.hardpointseatD[hardpoint] ) )
+	 {
+	 if( file.hardpointseatD[hardpoint].GetTeam() == TEAM_MILITIA )
+	 closeplayermilitia = closeplayermilitia + 1
+	 else
+	 closeplayerimc = closeplayerimc + 1
+	 }
+	}
 	int pointstoaddtoprogress = 0
 	int teamprogresstoremove = 0
 	int teamtoprogressto = 0
@@ -989,6 +1016,101 @@ OnThreadEnd(
 	}
 )
 WaitForever()
+}
+
+void function NPCHardpointSeat( entity npc )
+{
+ while( IsValid( npc ) && IsAlive( npc ) )
+ {
+  foreach( entity hardpoint in file.hardpoints )
+  {
+   if( IsValid( hardpoint ) )
+   {
+   bool entityisusinghardpoint = false
+   if( npc in file.entityisusinghardpoint )
+   entityisusinghardpoint = file.entityisusinghardpoint[npc]
+   if( !npc.Anim_IsActive() && (!IsValid( npc.GetEnemy() ) && !IsAlive( npc.GetEnemy() ) || Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) >= 1250) && entityisusinghardpoint == false && npc.GetParent() == null && Distance( npc.GetOrigin(), hardpoint.GetOrigin() ) <= 150 && (file.hardpointseatA[hardpoint] == hardpoint || file.hardpointseatB[hardpoint] == hardpoint || file.hardpointseatC[hardpoint] == hardpoint || file.hardpointseatD[hardpoint] == hardpoint) )
+   {
+   	 string attachID = ""
+	 if ( file.hardpointseatA[hardpoint] == hardpoint )
+	 {
+		 attachID = "SEAT_N"
+		 file.hardpointseatA[hardpoint] <- npc
+	 }
+	 else if ( file.hardpointseatB[hardpoint] == hardpoint )
+	 {
+		 attachID = "SEAT_W"
+		 file.hardpointseatB[hardpoint] <- npc
+	 }
+	 else if ( file.hardpointseatC[hardpoint] == hardpoint )
+	 {
+		 attachID = "SEAT_S"
+		 file.hardpointseatC[hardpoint] <- npc
+	 }
+	 else if ( file.hardpointseatD[hardpoint] == hardpoint )
+	 {
+		 attachID = "SEAT_E"
+		 file.hardpointseatD[hardpoint] <- npc
+	 }
+	 if( attachID != "" )
+	 {
+	 array<string> sittingAnims = [ "pt_console_runin_R", "pt_console_runin_L" ]
+	 file.entityisusinghardpoint[npc] <- true
+	 entityisusinghardpoint = true
+	 npc.EndSignal( "OnDestroy" )
+     npc.EndSignal( "OnDeath" )
+	 OnThreadEnd( function() : ( npc, hardpoint, attachID ) 
+	 {
+	  if( IsValid( hardpoint ) )
+      {
+	   if( !IsValid( npc ) || !IsAlive( npc ) )
+	   {
+       if( attachID == "SEAT_N" )
+	   file.hardpointseatA[hardpoint] <- hardpoint
+       if( attachID == "SEAT_W" )
+	   file.hardpointseatB[hardpoint] <- hardpoint
+       if( attachID == "SEAT_S" )
+	   file.hardpointseatC[hardpoint] <- hardpoint
+       if( attachID == "SEAT_E" )
+	   file.hardpointseatD[hardpoint] <- hardpoint
+	   }
+      }
+	 })
+	 waitthread PlayAnimTeleport( npc, sittingAnims.getrandom(), hardpoint, attachID )
+	 if( !NPCIsPlayingAnim( npc ) )
+	 thread PlayAnimTeleport( npc, "pt_console_idle", hardpoint, attachID )
+	  while( entityisusinghardpoint == true )
+	  {
+	   if( IsValid( npc.GetEnemy() ) && IsAlive( npc.GetEnemy() ) && Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) < 1250 )
+	   {
+	   array<string> exitAnims = [ "pt_console_runout_R", "pt_console_runout_L" ]
+	   waitthread PlayAnimTeleport( npc, exitAnims.getrandom(), hardpoint, attachID )
+       if( attachID == "SEAT_N" )
+	   file.hardpointseatA[hardpoint] <- hardpoint
+       if( attachID == "SEAT_W" )
+	   file.hardpointseatB[hardpoint] <- hardpoint
+       if( attachID == "SEAT_S" )
+	   file.hardpointseatC[hardpoint] <- hardpoint
+       if( attachID == "SEAT_E" )
+	   file.hardpointseatD[hardpoint] <- hardpoint
+	   file.entityisusinghardpoint[npc] <- false
+	   entityisusinghardpoint = false
+	   }
+	   WaitFrame()
+	  }
+	 }
+	}
+   }
+  }
+  WaitFrame()
+ }
+}
+
+bool function NPCIsPlayingAnim( entity npc )
+{
+while( IsValid( npc ) && IsAlive( npc ) && npc.Anim_IsActive() )
+WaitFrame()
+return false
 }
 
 void function OnSpectreLeechedHardpoint( entity spectre, entity player )
