@@ -1078,11 +1078,17 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
       }
 	 })
 	 npc.SetVelocity( < 0, 0, 0 > )
-	 waitthread PlayAnimTeleport( npc, sittingAnims.getrandom(), hardpoint, attachID )
+	 npc.SetParent( hardpoint, attachID )
+	 waitthread PlayAnimGravity( npc, sittingAnims.getrandom(), hardpoint, attachID )
 	 if( !NPCIsPlayingAnim( npc ) )
 	 {
 	 npc.SetVelocity( < 0, 0, 0 > )
-	 thread PlayAnimTeleport( npc, "pt_console_idle", hardpoint, attachID )
+	  if( npc.GetParent() != hardpoint )
+	  {
+	  npc.ClearParent()
+	  npc.SetParent( hardpoint, attachID )
+	  }
+	 thread PlayAnimGravity( npc, "pt_console_idle", hardpoint, attachID )
 	 }
 	  while( entityisusinghardpoint == true )
 	  {
@@ -1090,7 +1096,14 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	   {
 	   array<string> exitAnims = [ "pt_console_runout_R", "pt_console_runout_L" ]
 	   npc.SetVelocity( < 0, 0, 0 > )
-	   waitthread PlayAnimTeleport( npc, exitAnims.getrandom(), hardpoint, attachID )
+	    if( npc.GetParent() != hardpoint )
+	    {
+	    npc.ClearParent()
+	    npc.SetParent( hardpoint, attachID )
+	    }
+	   waitthread PlayAnimGravity( npc, exitAnims.getrandom(), hardpoint, attachID )
+	   if( npc.GetParent() == hardpoint )
+	   npc.ClearParent()
        if( attachID == "SEAT_N" )
 	   file.hardpointseatA[hardpoint] <- hardpoint
        if( attachID == "SEAT_W" )
