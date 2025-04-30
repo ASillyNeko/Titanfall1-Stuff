@@ -1080,6 +1080,7 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	 })
 	 npc.SetVelocity( < 0, 0, 0 > )
 	 npc.SetParent( hardpoint, attachID )
+	 npc.SetCanBeMeleeExecuted( false )
 	 waitthread PlayAnimGravity( npc, sittingAnims.getrandom(), hardpoint, attachID )
 	 npc.SetVelocity( < 0, 0, 0 > )
 	 thread PlayAnimGravity( npc, "pt_console_idle", hardpoint, attachID )
@@ -1109,6 +1110,7 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	   file.entityisusinghardpoint[npc] <- false
 	   entityisusinghardpoint = false
 	   npc.Anim_Stop()
+	   npc.SetCanBeMeleeExecuted( true )
 	   return
 	   }
 	   WaitFrame()
