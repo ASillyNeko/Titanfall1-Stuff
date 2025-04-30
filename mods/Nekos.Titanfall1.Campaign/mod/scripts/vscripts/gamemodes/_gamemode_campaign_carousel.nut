@@ -1060,12 +1060,11 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	 entityisusinghardpoint = true
 	 npc.EndSignal( "OnDestroy" )
      npc.EndSignal( "OnDeath" )
-	 npc.EndSignal( "OnSyncedMeleeVictim" )
 	 OnThreadEnd( function() : ( npc, hardpoint, attachID ) 
 	 {
 	  if( IsValid( hardpoint ) )
       {
-	   if( !IsValid( npc ) || !IsAlive( npc ) || npc.Anim_IsActive() )
+	   if( !IsValid( npc ) || !IsAlive( npc ) )
 	   {
        if( attachID == "SEAT_N" )
 	   file.hardpointseatA[hardpoint] <- hardpoint
@@ -1109,7 +1108,6 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	   thread NPCHardpointSeat( npc, hardpoint )
 	   file.entityisusinghardpoint[npc] <- false
 	   entityisusinghardpoint = false
-	   npc.Anim_Stop()
 	   npc.SetCanBeMeleeExecuted( true )
 	   return
 	   }
