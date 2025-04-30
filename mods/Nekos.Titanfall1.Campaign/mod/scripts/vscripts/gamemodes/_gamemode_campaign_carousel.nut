@@ -1076,14 +1076,19 @@ void function NPCHardpointSeat( entity npc )
 	   }
       }
 	 })
+	 npc.SetVelocity( < 0, 0, 0 > )
 	 waitthread PlayAnimTeleport( npc, sittingAnims.getrandom(), hardpoint, attachID )
 	 if( !NPCIsPlayingAnim( npc ) )
+	 {
+	 npc.SetVelocity( < 0, 0, 0 > )
 	 thread PlayAnimTeleport( npc, "pt_console_idle", hardpoint, attachID )
+	 }
 	  while( entityisusinghardpoint == true )
 	  {
 	   if( IsValid( npc.GetEnemy() ) && IsAlive( npc.GetEnemy() ) && Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) < 1250 )
 	   {
 	   array<string> exitAnims = [ "pt_console_runout_R", "pt_console_runout_L" ]
+	   npc.SetVelocity( < 0, 0, 0 > )
 	   waitthread PlayAnimTeleport( npc, exitAnims.getrandom(), hardpoint, attachID )
        if( attachID == "SEAT_N" )
 	   file.hardpointseatA[hardpoint] <- hardpoint
