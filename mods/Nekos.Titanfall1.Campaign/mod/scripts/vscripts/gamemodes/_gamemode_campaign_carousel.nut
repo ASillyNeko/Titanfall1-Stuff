@@ -1060,11 +1060,12 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	 entityisusinghardpoint = true
 	 npc.EndSignal( "OnDestroy" )
      npc.EndSignal( "OnDeath" )
+	 npc.EndSignal( "OnSyncedMeleeVictim" )
 	 OnThreadEnd( function() : ( npc, hardpoint, attachID ) 
 	 {
 	  if( IsValid( hardpoint ) )
       {
-	   if( !IsValid( npc ) || !IsAlive( npc ) )
+	   if( !IsValid( npc ) || !IsAlive( npc ) || npc.Anim_IsActive() )
 	   {
        if( attachID == "SEAT_N" )
 	   file.hardpointseatA[hardpoint] <- hardpoint
@@ -1080,16 +1081,8 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	 npc.SetVelocity( < 0, 0, 0 > )
 	 npc.SetParent( hardpoint, attachID )
 	 waitthread PlayAnimGravity( npc, sittingAnims.getrandom(), hardpoint, attachID )
-	 if( !NPCIsPlayingAnim( npc ) )
-	 {
 	 npc.SetVelocity( < 0, 0, 0 > )
-	  if( npc.GetParent() != hardpoint )
-	  {
-	  npc.ClearParent()
-	  npc.SetParent( hardpoint, attachID )
-	  }
 	 thread PlayAnimGravity( npc, "pt_console_idle", hardpoint, attachID )
-	 }
 	  while( entityisusinghardpoint == true )
 	  {
 	   if( IsValid( npc.GetEnemy() ) && IsAlive( npc.GetEnemy() ) && Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) < 1250 )
@@ -1112,8 +1105,11 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	   file.hardpointseatC[hardpoint] <- hardpoint
        if( attachID == "SEAT_E" )
 	   file.hardpointseatD[hardpoint] <- hardpoint
+	   thread NPCHardpointSeat( npc, hardpoint )
 	   file.entityisusinghardpoint[npc] <- false
 	   entityisusinghardpoint = false
+	   npc.Anim_Stop()
+	   return
 	   }
 	   WaitFrame()
 	  }
@@ -1123,13 +1119,6 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
   //}
   WaitFrame()
  }
-}
-
-bool function NPCIsPlayingAnim( entity npc )
-{
-while( IsValid( npc ) && IsAlive( npc ) && npc.Anim_IsActive() )
-WaitFrame()
-return false
 }
 
 void function OnSpectreLeechedHardpoint( entity spectre, entity player )
