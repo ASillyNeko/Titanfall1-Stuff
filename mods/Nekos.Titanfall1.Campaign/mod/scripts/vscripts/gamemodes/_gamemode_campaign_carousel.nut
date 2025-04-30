@@ -267,7 +267,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	    entitynpc.EnableBehavior( "Follow" )
 		entitynpc.DisableBehavior( "Assault" )
 		thread ChangeHardpointNPCCount( entitynpc, nexthardpointtarget )
-		thread NPCHardpointSeat( entitynpc )
+		thread NPCHardpointSeat( entitynpc, hardpoint.GetOwner() )
 		}
 		
 		npcs.append( entitynpc )
@@ -756,6 +756,7 @@ void function Hardpoints()
         file.hardpointseatD[hardpoint] <- hardpoint
 		entity coolerhardpoint = CreateEntity( "prop_script" )
 		DispatchSpawn( coolerhardpoint )
+		coolerhardpoint.SetOwner( hardpoint )
 		coolerhardpoint.SetParent( hardpoint, "ORIGIN" )
 		if( group == "A" )
 		file.hardpointA = coolerhardpoint
@@ -1018,12 +1019,12 @@ OnThreadEnd(
 WaitForever()
 }
 
-void function NPCHardpointSeat( entity npc )
+void function NPCHardpointSeat( entity npc, entity hardpoint )
 {
  while( IsValid( npc ) && IsAlive( npc ) )
  {
-  foreach( entity hardpoint in file.hardpoints )
-  {
+  //foreach( entity hardpoint in file.hardpoints )
+  //{
    if( IsValid( hardpoint ) )
    {
    bool entityisusinghardpoint = false
@@ -1106,7 +1107,7 @@ void function NPCHardpointSeat( entity npc )
 	 }
 	}
    }
-  }
+  //}
   WaitFrame()
  }
 }
