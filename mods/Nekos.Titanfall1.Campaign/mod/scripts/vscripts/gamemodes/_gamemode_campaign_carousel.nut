@@ -93,11 +93,7 @@ bool didwait = false
   thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
   }
   if( didwait == false )
-  {
   WaitFrame()
-  thread Attrition_militia()
-  return
-  }
  }
 }
 
@@ -119,11 +115,7 @@ bool didwait = false
   thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
   }
   if( didwait == false )
-  {
   WaitFrame()
-  thread Attrition_imc()
-  return
-  }
  }
 }
 
