@@ -175,7 +175,8 @@ void function SpawnNPCDroppod( int team, string npc )
 	droppodspawns = SpawnPoints_GetPilot()
 	entity node = droppodspawns[ GetSpawnPointIndex( droppodspawns, team ) ]
 	vector pos = node.GetOrigin()
-	entity pod = CreateDropPod( pos, <0,0,0> )
+	vector angles = node.GetAngles()
+	entity pod = CreateDropPod( pos, angles )
 	if( team == TEAM_MILITIA )
 	file.militia_npc_count = file.militia_npc_count + 4
 	if( team == TEAM_IMC )
@@ -225,12 +226,12 @@ void function SpawnNPCDroppod( int team, string npc )
 	
 	InitFireteamDropPod( pod )
 		
-	waitthread LaunchAnimDropPod( pod, "pod_testpath", pos, <0,0,0> )
+	waitthread LaunchAnimDropPod( pod, "pod_testpath", pos, angles )
 
 	string squadName = MakeSquadName( team, UniqueString( "" ) )
 	for ( int i = 0; i < 4; i++ )
 	{
-		entity entitynpc = CreateNPC( npc, team, pos, <0,0,0> )
+		entity entitynpc = CreateNPC( npc, team, pos, angles )
 		DispatchSpawn( entitynpc )
 		entitynpc.SetEnemyChangeCallback( OnNPCEnemyChange )
 		if( npc == "npc_spectre" )
