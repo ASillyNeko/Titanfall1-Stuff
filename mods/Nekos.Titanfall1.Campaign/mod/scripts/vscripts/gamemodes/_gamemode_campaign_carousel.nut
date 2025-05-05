@@ -173,7 +173,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	}
 	if( isvaliddroppodspawn == false )
 	droppodspawns = SpawnPoints_GetPilot()
-	entity node = droppodspawns[ GetSpawnPointIndex( droppodspawns, team ) ]
+	entity node = droppodspawns.getrandom()
 	vector pos = node.GetOrigin()
 	vector angles = node.GetAngles()
 	entity pod = CreateDropPod( pos, angles )
@@ -353,25 +353,6 @@ void function OnNPCEnemyChange( entity guy )
 		return
 
 		guy.SetActiveWeaponByName( weaponToChange )
-}
-
-int function GetSpawnPointIndex( array< entity > points, int team )
-{
-	entity zone = DecideSpawnZone_Generic( points, team )
-	
-	if ( IsValid( zone ) )
-	{
-		// 20 Tries to get a random point close to the zone
-		for ( int i = 0; i < 20; i++ )
-		{
-			int index = RandomInt( points.len() )
-		
-			if ( Distance2D( points[ index ].GetOrigin(), zone.GetOrigin() ) < 6000 )
-				return index
-		}
-	}
-	
-	return RandomInt( points.len() )
 }
 
 void function SetUpNPCWeapons( entity guy )
