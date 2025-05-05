@@ -292,7 +292,22 @@ void function SpawnNPCDroppod( int team, string npc )
 
 	if( npc == "npc_spectre" ) // This Moves The NPCs Away From The Hardpoint
 	thread SquadHandler( npcs )
-}
+	if( GetMapName().find( "mp_lf_") != null ) // These Maps Spawn The NPC Outside The Map
+ 	{
+ 	foreach( entity entitynpc in npcs )
+ 	thread PutDroppodNPCInSafePos( entitynpc, pod )
+ 	}
+ }
+ 
+ void function PutDroppodNPCInSafePos( entity npc, entity npcpod )
+ {
+ npc.EndSignal( "OnDestroy" )
+ npc.EndSignal( "OnDeath" )
+ npcpod.EndSignal( "OnDestroy" )
+ npcpod.EndSignal( "OnDeath" )
+ WaittillAnimDone( npc )
+ PutEntityInSafeSpot( npc, null, null, npcpod.GetOrigin(), npc.GetOrigin() )
+ }
 
 void function OnNPCEnemyChange( entity guy )
 {
