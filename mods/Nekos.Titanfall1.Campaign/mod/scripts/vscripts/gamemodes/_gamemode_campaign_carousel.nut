@@ -30,6 +30,12 @@ array<string> aitdm_levels = [
 "mp_angel_city",
 "mp_colony02",
 "mp_relic02",
+"mp_lf_uma",
+"mp_lf_stacks",
+"mp_lf_deck",
+"mp_lf_meadow",
+"mp_lf_traffic",
+"mp_lf_township",
 ]
 
 array<string> cp_levels = [
@@ -78,6 +84,14 @@ thread Attrition_imc()
 void function Attrition_militia()
 {
 bool didwait = false
+ while( file.militia_npc_count <= 12 )
+ {
+ WaitFrame()
+ if ( RandomInt( 100 ) < 50 && file.militia_spectre_count <= 4 )
+ thread SpawnNPCDroppod( TEAM_MILITIA, "npc_spectre" )
+ else
+ thread SpawnNPCDroppod( TEAM_MILITIA, "npc_soldier" )
+ }
  while( true )
  {
   didwait = false
@@ -100,6 +114,14 @@ bool didwait = false
 void function Attrition_imc()
 {
 bool didwait = false
+ while( file.imc_npc_count <= 12 )
+ {
+ WaitFrame()
+ if ( RandomInt( 100 ) < 50 && file.imc_spectre_count <= 4 ) // Cap Spectre Count To 8 So Players Can't Spam Hack Them
+ thread SpawnNPCDroppod( TEAM_IMC, "npc_spectre" )
+ else
+ thread SpawnNPCDroppod( TEAM_IMC, "npc_soldier" )
+ }
  while( true )
  {
   didwait = false
@@ -270,21 +292,6 @@ void function SpawnNPCDroppod( int team, string npc )
 
 	if( npc == "npc_spectre" ) // This Moves The NPCs Away From The Hardpoint
 	thread SquadHandler( npcs )
-	if( GetMapName().find( "mp_lf_") != null ) // These Maps Spawn The NPC Outside The Map
-	{
-	foreach( entity entitynpc in npcs )
-	thread PutDroppodNPCInSafePos( entitynpc, pod )
-	}
-}
-
-void function PutDroppodNPCInSafePos( entity npc, entity npcpod )
-{
-npc.EndSignal( "OnDestroy" )
-npc.EndSignal( "OnDeath" )
-npcpod.EndSignal( "OnDestroy" )
-npcpod.EndSignal( "OnDeath" )
-WaittillAnimDone( npc )
-PutEntityInSafeSpot( npc, null, null, npcpod.GetOrigin(), npc.GetOrigin() )
 }
 
 void function OnNPCEnemyChange( entity guy )
