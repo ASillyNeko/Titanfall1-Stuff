@@ -290,7 +290,7 @@ void function SpawnNPCDroppod( int team, string npc )
 	
 	ActivateFireteamDropPod( pod, npcs )
 
-	if( npc == "npc_spectre" ) // This Moves The NPCs Away From The Hardpoint
+	if( npc == "npc_spectre" || file.mode == "Attrition" ) // This Moves The NPCs Away From The Hardpoint
 	thread SquadHandler( npcs )
 	if( GetMapName().find( "mp_lf_") != null ) // These Maps Spawn The NPC Outside The Map
  	{
