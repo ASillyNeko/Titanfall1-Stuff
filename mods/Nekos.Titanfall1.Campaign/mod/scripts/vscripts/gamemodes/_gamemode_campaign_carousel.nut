@@ -929,7 +929,7 @@ void function HardpointThink()
     hardpointprogress = 100
 	if( hardpointprogress < 0 )
 	hardpointprogress = 0
-    if( hardpointprogress != 100 && teamtoprogressto != 0 && teamtoprogressto != teamprogresstoremove )
+    if( teamtoprogressto != 0 && teamtoprogressto != teamprogresstoremove )
     file.hardpointprogress[hardpoint] <- hardpointprogress
     if( hardpointprogress == 100 && teamtoprogressto != 0 && teamprogresstoremove != teamtoprogressto )
     SetTeam( hardpoint, teamtoprogressto )
@@ -1026,7 +1026,10 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
    bool entityisusinghardpoint = false
    if( npc in file.entityisusinghardpoint )
    entityisusinghardpoint = file.entityisusinghardpoint[npc]
-   if( !npc.Anim_IsActive() && (!IsValid( npc.GetEnemy() ) && !IsAlive( npc.GetEnemy() ) || Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) >= 1250) && entityisusinghardpoint == false && npc.GetParent() == null && Distance( npc.GetOrigin(), hardpoint.GetOrigin() ) <= 150 && (file.hardpointseatA[hardpoint] == hardpoint || file.hardpointseatB[hardpoint] == hardpoint || file.hardpointseatC[hardpoint] == hardpoint || file.hardpointseatD[hardpoint] == hardpoint) )
+   int hardpointprogress = 0
+   if( hardpoint in file.hardpointprogress )
+   hardpointprogress = file.hardpointprogress[hardpoint]
+   if( hardpointprogress != 100 && !npc.Anim_IsActive() && (!IsValid( npc.GetEnemy() ) && !IsAlive( npc.GetEnemy() ) || Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) >= 1250) && entityisusinghardpoint == false && npc.GetParent() == null && Distance( npc.GetOrigin(), hardpoint.GetOrigin() ) <= 150 && (file.hardpointseatA[hardpoint] == hardpoint || file.hardpointseatB[hardpoint] == hardpoint || file.hardpointseatC[hardpoint] == hardpoint || file.hardpointseatD[hardpoint] == hardpoint) )
    {
    	 string attachID = ""
 	 if ( file.hardpointseatA[hardpoint] == hardpoint )
@@ -1081,7 +1084,10 @@ void function NPCHardpointSeat( entity npc, entity hardpoint )
 	 thread PlayAnimGravity( npc, "pt_console_idle", hardpoint, attachID )
 	  while( entityisusinghardpoint == true )
 	  {
-	   if( IsValid( npc.GetEnemy() ) && IsAlive( npc.GetEnemy() ) && Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) < 1250 )
+	   int hardpointprogress = 0
+	   if( hardpoint in file.hardpointprogress )
+	   hardpointprogress = file.hardpointprogress[hardpoint]
+	   if( hardpointprogress == 100 || (IsValid( npc.GetEnemy() ) && IsAlive( npc.GetEnemy() ) && Distance( npc.GetOrigin(), npc.GetEnemy().GetOrigin() ) < 1250) )
 	   {
 	   array<string> exitAnims = [ "pt_console_runout_R", "pt_console_runout_L" ]
 	   npc.SetVelocity( < 0, 0, 0 > )
