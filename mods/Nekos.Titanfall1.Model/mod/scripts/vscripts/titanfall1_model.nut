@@ -39,15 +39,15 @@ void function OnTitanBodyGroupChange( entity titan )
 {
  while( true )
  {
-if( !IsValid( titan ) )
-return
-if( !titan.IsTitan() )
-return
-if ( titan.GetModelName() != $"models/titans/atlas/atlas_titan.mdl" )
-return
-if ( titan.GetBodyGroupState( 4 ) != 1 )
-titan.SetBodygroup( 4, 1 )
-WaitFrame()
+ if( !IsValid( titan ) )
+ return
+ if( !titan.IsTitan() )
+ return
+ if ( titan.GetModelName() != $"models/titans/atlas/atlas_titan.mdl" )
+ return
+ if ( titan.GetBodyGroupState( 4 ) != 1 )
+ titan.SetBodygroup( 4, 1 )
+ WaitFrame()
  }
 }
 
