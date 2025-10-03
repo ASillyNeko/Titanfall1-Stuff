@@ -600,7 +600,6 @@ void function HandleScoreEvent( entity victim, entity attacker, var damageInfo )
 	// without showing the wrong value on client
 	int teamScore
 	int playerScore
-	string eventName
 	
 	// Handle AI, marvins aren't setup so we check for them to prevent crash
 	if ( victim.IsNPC() && victim.GetClassName() != "npc_marvin" )
@@ -619,10 +618,6 @@ void function HandleScoreEvent( entity victim, entity attacker, var damageInfo )
 				playerScore = 0
 				break
 		}
-		
-		// Titan kills get handled bellow this
-		if ( eventName != "KillNPCTitan"  && eventName != "" )
-			playerScore = ScoreEvent_GetPointValue( GetScoreEvent( eventName ) )
 	}
 	
 	if ( victim.IsPlayer() )
