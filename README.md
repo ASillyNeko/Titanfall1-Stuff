@@ -20,4 +20,4 @@ Nekos.Titanfall1.Titan.Loadout | Changes Titan Loadout To A Random Titanfall 1 T
 
 Nekos.Titanfall1.Weapon.Pickup | Allows Players To Pickup Weapons From Dead Titans
 
-Nekos.Titanfall1.Campaign | Only Supports Angel City Map For Intros If You Are Server Hoster Use This `+setplaylist ffa +mp_gamemode campaign_carousel` It Allows The Mod To Not Be Required On Client Has Attrition And Hardpoint Modes
+Nekos.Titanfall1.Campaign | Only Supports Angel City Map For Intros If You Are A Server Hoster Hosting This Use `+setplaylist ffa +mp_gamemode campaign_carousel` It Allows The Mod To Not Be Required On Client Has Attrition And Hardpoint Modes
